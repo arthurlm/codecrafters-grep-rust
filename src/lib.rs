@@ -2,9 +2,15 @@ mod error;
 
 pub use error::*;
 
+pub fn match_pattern(input_line: &str, input_pattern: &str) -> bool {
+    let re = Regexp::parse(input_pattern).expect("Unhandled pattern");
+    re.matches(input_line)
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Regexp {
     pub patterns: Vec<Pattern>,
+    pub start_string_anchor: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -20,6 +26,13 @@ impl Regexp {
     pub fn parse(mut input: &str) -> Result<Self, GrepError> {
         let mut patterns = Vec::new();
 
+        let start_string_anchor = if let Some(next_input) = input.strip_prefix('^') {
+            input = next_input;
+            true
+        } else {
+            false
+        };
+
         loop {
             let (next_input, pattern) = Pattern::parse(input)?;
             patterns.push(pattern);
@@ -29,7 +42,10 @@ impl Regexp {
             input = next_input;
         }
 
-        Ok(Self { patterns })
+        Ok(Self {
+            patterns,
+            start_string_anchor,
+        })
     }
 
     fn matches_start(&self, input_lines: &str) -> bool {
@@ -47,13 +63,17 @@ impl Regexp {
     }
 
     pub fn matches(&self, input_lines: &str) -> bool {
-        for start_idx in 0..input_lines.len() {
-            if self.matches_start(&input_lines[start_idx..]) {
-                return true;
+        if self.start_string_anchor {
+            self.matches_start(input_lines)
+        } else {
+            for start_idx in 0..input_lines.len() {
+                if self.matches_start(&input_lines[start_idx..]) {
+                    return true;
+                }
             }
-        }
 
-        false
+            false
+        }
     }
 }
 

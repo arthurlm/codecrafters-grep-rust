@@ -2,11 +2,6 @@ use std::{env, io, process};
 
 use grep_starter_rust::*;
 
-fn match_pattern(input_line: &str, input_pattern: &str) -> bool {
-    let re = Regexp::parse(input_pattern).expect("Unhandled pattern");
-    re.matches(input_line)
-}
-
 // Usage: echo <input_text> | your_grep.sh -E <pattern>
 fn main() {
     if env::args().nth(1).unwrap() != "-E" {
