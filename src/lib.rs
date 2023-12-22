@@ -3,21 +3,67 @@ mod error;
 pub use error::*;
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct Regexp {
+    pub patterns: Vec<Pattern>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum Pattern {
-    Text(String),
+    Literal(char),
     Digit,
     Chars,
     PositiveCharGroup(Vec<char>),
     NegativeCharGroup(Vec<char>),
 }
 
+impl Regexp {
+    pub fn parse(mut input: &str) -> Result<Self, GrepError> {
+        let mut patterns = Vec::new();
+
+        loop {
+            let (next_input, pattern) = Pattern::parse(input)?;
+            patterns.push(pattern);
+            if next_input.is_empty() {
+                break;
+            }
+            input = next_input;
+        }
+
+        Ok(Self { patterns })
+    }
+
+    fn matches_start(&self, input_lines: &str) -> bool {
+        for (idx, pattern) in self.patterns.iter().enumerate() {
+            let Some(c) = input_lines.chars().nth(idx) else {
+                return false;
+            };
+
+            if !pattern.matches(c) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn matches(&self, input_lines: &str) -> bool {
+        for start_idx in 0..input_lines.len() {
+            if self.matches_start(&input_lines[start_idx..]) {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
 impl Pattern {
     pub fn parse(input: &str) -> Result<(&str, Self), GrepError> {
-        if input.starts_with(r"\d") {
-            Ok((&input[2..], Self::Digit))
-        } else if input.starts_with(r"\w") {
-            Ok((&input[2..], Self::Chars))
-        } else if input.starts_with(r"[") {
+        if let Some(new_input) = input.strip_prefix(r"\d") {
+            Ok((new_input, Self::Digit))
+        } else if let Some(new_input) = input.strip_prefix(r"\w") {
+            Ok((new_input, Self::Chars))
+        } else if input.starts_with('[') {
             match input.chars().position(|c| c == ']') {
                 None => Err(GrepError::InvalidPattern),
                 Some(end) => {
@@ -36,17 +82,23 @@ impl Pattern {
         } else if input.is_empty() {
             Err(GrepError::InvalidPattern)
         } else {
-            Ok(("", Self::Text(input.to_string())))
+            let (val, input) = input.split_at(1);
+            assert_eq!(val.len(), 1);
+
+            Ok((
+                input,
+                Self::Literal(val.chars().next().expect("split at fail")),
+            ))
         }
     }
 
-    pub fn matches(&self, input_line: &str) -> bool {
+    pub fn matches(&self, input_char: char) -> bool {
         match self {
-            Self::Text(expected_text) => input_line.contains(expected_text),
-            Self::Digit => input_line.chars().any(|x| x.is_digit(10)),
-            Self::Chars => input_line.chars().any(|x| x.is_ascii_alphanumeric()),
-            Self::PositiveCharGroup(values) => input_line.chars().any(|x| values.contains(&x)),
-            Self::NegativeCharGroup(values) => input_line.chars().all(|x| !values.contains(&x)),
+            Self::Literal(char) => input_char == *char,
+            Self::Digit => input_char.is_ascii_digit(),
+            Self::Chars => input_char.is_alphanumeric(),
+            Self::PositiveCharGroup(values) => values.contains(&input_char),
+            Self::NegativeCharGroup(values) => !values.contains(&input_char),
         }
     }
 }

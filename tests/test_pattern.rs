@@ -1,33 +1,86 @@
-use grep_starter_rust::{GrepError, Pattern};
+use grep_starter_rust::*;
 
 #[test]
 fn test_parse_pattern() {
-    let (r, x) = Pattern::parse(r"hello").unwrap();
-    assert_eq!(x, Pattern::Text("hello".to_string()));
-    assert_eq!(r, "");
+    assert_eq!(
+        Regexp::parse(r"hello").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Literal('h'),
+                Pattern::Literal('e'),
+                Pattern::Literal('l'),
+                Pattern::Literal('l'),
+                Pattern::Literal('o'),
+            ]
+        }
+    );
 
-    let (r, x) = Pattern::parse(r"\d").unwrap();
-    assert_eq!(x, Pattern::Digit);
-    assert_eq!(r, "");
+    assert_eq!(
+        Regexp::parse(r"\d").unwrap(),
+        Regexp {
+            patterns: vec![Pattern::Digit]
+        }
+    );
 
-    let (r, x) = Pattern::parse(r"\w").unwrap();
-    assert_eq!(x, Pattern::Chars);
-    assert_eq!(r, "");
+    assert_eq!(
+        Regexp::parse(r"\w").unwrap(),
+        Regexp {
+            patterns: vec![Pattern::Chars]
+        }
+    );
 
-    let (r, x) = Pattern::parse(r"[abc]").unwrap();
-    assert_eq!(x, Pattern::PositiveCharGroup(vec!['a', 'b', 'c']));
-    assert_eq!(r, "");
+    assert_eq!(
+        Regexp::parse(r"[abc]").unwrap(),
+        Regexp {
+            patterns: vec![Pattern::PositiveCharGroup(vec!['a', 'b', 'c'])]
+        }
+    );
 
-    let (r, x) = Pattern::parse(r"[^defg]").unwrap();
-    assert_eq!(x, Pattern::NegativeCharGroup(vec!['d', 'e', 'f', 'g']));
-    assert_eq!(r, "");
+    assert_eq!(
+        Regexp::parse(r"[^defg]").unwrap(),
+        Regexp {
+            patterns: vec![Pattern::NegativeCharGroup(vec!['d', 'e', 'f', 'g'])]
+        }
+    );
+
+    assert_eq!(
+        Regexp::parse(r"\d apple").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Digit,
+                Pattern::Literal(' '),
+                Pattern::Literal('a'),
+                Pattern::Literal('p'),
+                Pattern::Literal('p'),
+                Pattern::Literal('l'),
+                Pattern::Literal('e'),
+            ]
+        }
+    );
+
+    assert_eq!(
+        Regexp::parse(r"\d \d ap[plx]le").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Digit,
+                Pattern::Literal(' '),
+                Pattern::Digit,
+                Pattern::Literal(' '),
+                Pattern::Literal('a'),
+                Pattern::Literal('p'),
+                Pattern::PositiveCharGroup(vec!['p', 'l', 'x']),
+                Pattern::Literal('l'),
+                Pattern::Literal('e'),
+            ]
+        }
+    );
 }
 
 #[test]
 fn test_parse_invalid_pattern() {
-    let e = Pattern::parse("").unwrap_err();
+    let e = Regexp::parse("").unwrap_err();
     assert_eq!(e, GrepError::InvalidPattern);
 
-    let e = Pattern::parse("[abc").unwrap_err();
+    let e = Regexp::parse("[abc").unwrap_err();
     assert_eq!(e, GrepError::InvalidPattern);
 }
