@@ -117,4 +117,5 @@ fn test_wildcard() {
     assert!(match_pattern("dog", "d.g"));
     assert!(match_pattern("dog", "d.g"));
     assert!(!match_pattern("dg", "d.g"));
+    assert!(match_pattern("dg", "d.?g"));
 }

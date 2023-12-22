@@ -178,11 +178,10 @@ fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
             }
         }
         (_, Some(Pattern::ZeroOrOne(pattern))) => {
-            if match_here(&[pattern.as_ref().clone()], input_lines) {
-                match_here(&patterns[1..], &input_lines[1..])
-            } else {
-                match_here(&patterns[1..], input_lines)
-            }
+            let mut next_patterns = patterns.to_vec();
+            next_patterns.insert(0, pattern.as_ref().clone());
+
+            match_here(&next_patterns, input_lines) | match_here(&patterns[1..], input_lines)
         }
         // Check end pattern
         (None, Some(Pattern::End)) => true,
