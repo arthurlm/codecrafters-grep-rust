@@ -11,6 +11,7 @@ pub fn match_pattern(input_line: &str, input_pattern: &str) -> bool {
 pub struct Regexp {
     pub patterns: Vec<Pattern>,
     pub start_string_anchor: bool,
+    pub end_string_anchor: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -26,6 +27,7 @@ impl Regexp {
     pub fn parse(mut input: &str) -> Result<Self, GrepError> {
         let mut patterns = Vec::new();
 
+        // Parse anchor
         let start_string_anchor = if let Some(next_input) = input.strip_prefix('^') {
             input = next_input;
             true
@@ -33,6 +35,14 @@ impl Regexp {
             false
         };
 
+        let end_string_anchor = if let Some(next_input) = input.strip_suffix('$') {
+            input = next_input;
+            true
+        } else {
+            false
+        };
+
+        // Parse pattern
         loop {
             let (next_input, pattern) = Pattern::parse(input)?;
             patterns.push(pattern);
@@ -42,32 +52,53 @@ impl Regexp {
             input = next_input;
         }
 
+        // Build output
         Ok(Self {
             patterns,
             start_string_anchor,
+            end_string_anchor,
         })
     }
 
-    fn matches_start(&self, input_lines: &str) -> bool {
-        for (idx, pattern) in self.patterns.iter().enumerate() {
-            let Some(c) = input_lines.chars().nth(idx) else {
-                return false;
-            };
+    fn match_at_beginning(&self, input_lines: &str) -> Option<usize> {
+        let input_chars: Vec<_> = input_lines.chars().collect();
 
-            if !pattern.matches(c) {
-                return false;
+        let mut input_idx = 0;
+        let mut pattern_idx = 0;
+
+        loop {
+            match (input_chars.get(input_idx), self.patterns.get(pattern_idx)) {
+                // Check if pattern and current char match
+                (Some(c), Some(p)) if p.matches(*c) => {
+                    input_idx += 1;
+                    pattern_idx += 1;
+                }
+                // If there is no more pattern
+                (_, None) => return Some(input_idx),
+                // It there is some pattern left and it did not match whatever char we have
+                (_, Some(_)) => return None,
+            }
+        }
+    }
+
+    pub fn matches(&self, input_line: &str) -> bool {
+        fn match_end(this: &Regexp, end_index: Option<usize>, input_len: usize) -> bool {
+            if this.end_string_anchor {
+                matches!(end_index, Some(idx) if idx == input_len)
+            } else {
+                end_index.is_some()
             }
         }
 
-        true
-    }
-
-    pub fn matches(&self, input_lines: &str) -> bool {
         if self.start_string_anchor {
-            self.matches_start(input_lines)
+            match_end(&self, self.match_at_beginning(input_line), input_line.len())
         } else {
-            for start_idx in 0..input_lines.len() {
-                if self.matches_start(&input_lines[start_idx..]) {
+            for start_idx in 0..input_line.len() {
+                if match_end(
+                    &self,
+                    self.match_at_beginning(&input_line[start_idx..]),
+                    input_line.len(),
+                ) {
                     return true;
                 }
             }
