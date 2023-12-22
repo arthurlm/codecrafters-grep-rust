@@ -84,3 +84,11 @@ fn test_end_string() {
     assert!(match_pattern("dog", "dog$"));
     assert!(!match_pattern("dogs", "dog$"));
 }
+
+#[test]
+fn test_one_or_more() {
+    assert!(match_pattern("apple", "a+"));
+    assert!(match_pattern("SaaS", "a+"));
+    assert!(match_pattern("SaaS", "^Sa+S$"));
+    assert!(!match_pattern("dogs", "a+"));
+}

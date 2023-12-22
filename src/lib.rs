@@ -12,7 +12,7 @@ pub struct Regexp {
     pub patterns: Vec<Pattern>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Pattern {
     Literal(char),
     Digit,
@@ -21,6 +21,7 @@ pub enum Pattern {
     NegativeCharGroup(Vec<char>),
     Start,
     End,
+    OneOrMore(Box<Pattern>),
 }
 
 impl Regexp {
@@ -44,12 +45,23 @@ impl Regexp {
 
         // Parse pattern
         loop {
-            let (next_input, pattern) = Pattern::parse(input)?;
-            patterns.push(pattern);
-            if next_input.is_empty() {
+            if let Some(next_input) = input.strip_prefix("+") {
+                input = next_input;
+                let prev = patterns.pop().ok_or(GrepError::InvalidPattern)?;
+                patterns.push(Pattern::OneOrMore(Box::new(prev)));
+            }
+
+            if input.is_empty() {
                 break;
             }
+
+            let (next_input, pattern) = Pattern::parse(input)?;
+            patterns.push(pattern);
             input = next_input;
+        }
+
+        if patterns.is_empty() {
+            return Err(GrepError::InvalidPattern);
         }
 
         // Build output
@@ -136,6 +148,19 @@ fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
             if !values.contains(&input_char) =>
         {
             match_here(&patterns[1..], &input_lines[1..])
+        }
+        (_, Some(Pattern::OneOrMore(pattern))) => {
+            let mut count = 0;
+
+            loop {
+                if match_here(&[pattern.as_ref().clone()], &input_lines[count..]) {
+                    count += 1;
+                } else {
+                    break;
+                }
+            }
+
+            count > 0
         }
         // Check end pattern
         (None, Some(Pattern::End)) => true,

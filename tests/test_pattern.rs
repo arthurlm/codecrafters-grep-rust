@@ -110,6 +110,35 @@ fn test_parse_pattern() {
             patterns: vec![Pattern::Digit, Pattern::Literal('d'), Pattern::End],
         }
     );
+
+    assert_eq!(
+        Regexp::parse(r"\w+").unwrap(),
+        Regexp {
+            patterns: vec![Pattern::OneOrMore(Box::new(Pattern::Chars))],
+        }
+    );
+
+    assert_eq!(
+        Regexp::parse(r"xx+x").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Literal('x'),
+                Pattern::OneOrMore(Box::new(Pattern::Literal('x'))),
+                Pattern::Literal('x')
+            ],
+        }
+    );
+
+    assert_eq!(
+        Regexp::parse(r"^x[aze]+").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Start,
+                Pattern::Literal('x'),
+                Pattern::OneOrMore(Box::new(Pattern::PositiveCharGroup(vec!['a', 'z', 'e'])))
+            ],
+        }
+    );
 }
 
 #[test]
