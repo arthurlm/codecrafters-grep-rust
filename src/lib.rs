@@ -63,35 +63,12 @@ impl Regexp {
         })
     }
 
-    fn match_at_beginning(&self, input_lines: &str) -> Option<usize> {
-        let input_chars: Vec<_> = input_lines.chars().collect();
-
-        let mut input_idx = 0;
-        let mut pattern_idx = 0;
-
-        loop {
-            match (input_chars.get(input_idx), self.patterns.get(pattern_idx)) {
-                // Check if pattern and current char match
-                (Some(c), Some(p)) if p.matches(*c) => {
-                    input_idx += 1;
-                    pattern_idx += 1;
-                }
-                // Check end pattern
-                (None, Some(Pattern::End)) => return Some(input_idx),
-                // If there is no more pattern
-                (_, None) => return Some(input_idx),
-                // It there is some pattern left and it did not match whatever char we have
-                (_, Some(_)) => return None,
-            }
-        }
-    }
-
     pub fn matches(&self, input_line: &str) -> bool {
         if self.start_string_anchor {
-            self.match_at_beginning(input_line).is_some()
+            match_here(&self.patterns, input_line)
         } else {
             for start_idx in 0..input_line.len() {
-                if self.match_at_beginning(&input_line[start_idx..]).is_some() {
+                if match_here(&self.patterns, &input_line[start_idx..]) {
                     return true;
                 }
             }
@@ -135,15 +112,35 @@ impl Pattern {
             ))
         }
     }
+}
 
-    pub fn matches(&self, input_char: char) -> bool {
-        match self {
-            Self::Literal(char) => input_char == *char,
-            Self::Digit => input_char.is_ascii_digit(),
-            Self::Chars => input_char.is_alphanumeric(),
-            Self::PositiveCharGroup(values) => values.contains(&input_char),
-            Self::NegativeCharGroup(values) => !values.contains(&input_char),
-            Self::End => false,
+fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
+    match (input_lines.chars().nth(0), patterns.first()) {
+        // Check if pattern and current char match
+        (Some(input_char), Some(Pattern::Literal(char))) if input_char == *char => {
+            match_here(&patterns[1..], &input_lines[1..])
         }
+        (Some(input_char), Some(Pattern::Digit)) if input_char.is_ascii_digit() => {
+            match_here(&patterns[1..], &input_lines[1..])
+        }
+        (Some(input_char), Some(Pattern::Chars)) if input_char.is_alphanumeric() => {
+            match_here(&patterns[1..], &input_lines[1..])
+        }
+        (Some(input_char), Some(Pattern::PositiveCharGroup(values)))
+            if values.contains(&input_char) =>
+        {
+            match_here(&patterns[1..], &input_lines[1..])
+        }
+        (Some(input_char), Some(Pattern::NegativeCharGroup(values)))
+            if !values.contains(&input_char) =>
+        {
+            match_here(&patterns[1..], &input_lines[1..])
+        }
+        // Check end pattern
+        (None, Some(Pattern::End)) => true,
+        // If there is no more pattern
+        (_, None) => true,
+        // // It there is some pattern left and it did not match whatever char we have
+        (_, Some(_)) => false,
     }
 }
