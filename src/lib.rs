@@ -23,6 +23,7 @@ pub enum Pattern {
     End,
     OneOrMore(Box<Pattern>),
     ZeroOrOne(Box<Pattern>),
+    Wildcard,
 }
 
 impl Regexp {
@@ -46,13 +47,13 @@ impl Regexp {
 
         // Parse pattern
         loop {
-            if let Some(next_input) = input.strip_prefix("+") {
+            if let Some(next_input) = input.strip_prefix('+') {
                 input = next_input;
                 let prev = patterns.pop().ok_or(GrepError::InvalidPattern)?;
                 patterns.push(Pattern::OneOrMore(Box::new(prev)));
             }
 
-            if let Some(next_input) = input.strip_prefix("?") {
+            if let Some(next_input) = input.strip_prefix('?') {
                 input = next_input;
                 let prev = patterns.pop().ok_or(GrepError::InvalidPattern)?;
                 patterns.push(Pattern::ZeroOrOne(Box::new(prev)));
@@ -102,6 +103,8 @@ impl Pattern {
     pub fn parse(input: &str) -> Result<(&str, Self), GrepError> {
         if let Some(input) = input.strip_prefix(r"\d") {
             Ok((input, Self::Digit))
+        } else if let Some(input) = input.strip_prefix('.') {
+            Ok((input, Self::Wildcard))
         } else if let Some(input) = input.strip_prefix(r"\w") {
             Ok((input, Self::Chars))
         } else if let Some(input) = input.strip_prefix('[') {
@@ -135,7 +138,7 @@ impl Pattern {
 }
 
 fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
-    match (input_lines.chars().nth(0), patterns.first()) {
+    match (input_lines.chars().next(), patterns.first()) {
         // Check if pattern and current char match
         (Some(input_char), Some(Pattern::Literal(char))) if input_char == *char => {
             match_here(&patterns[1..], &input_lines[1..])
@@ -156,6 +159,7 @@ fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
         {
             match_here(&patterns[1..], &input_lines[1..])
         }
+        (Some(_), Some(Pattern::Wildcard)) => match_here(&patterns[1..], &input_lines[1..]),
         (_, Some(Pattern::OneOrMore(pattern))) => {
             let mut count = 0;
 
@@ -174,7 +178,7 @@ fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
             }
         }
         (_, Some(Pattern::ZeroOrOne(pattern))) => {
-            if match_here(&[pattern.as_ref().clone()], &input_lines) {
+            if match_here(&[pattern.as_ref().clone()], input_lines) {
                 match_here(&patterns[1..], &input_lines[1..])
             } else {
                 match_here(&patterns[1..], input_lines)

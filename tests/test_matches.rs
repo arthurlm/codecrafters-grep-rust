@@ -111,3 +111,10 @@ fn test_zero_or_one() {
     assert!(match_pattern("dog", "^dogs?$"));
     assert!(match_pattern("dogs", "^dogs?$"));
 }
+
+#[test]
+fn test_wildcard() {
+    assert!(match_pattern("dog", "d.g"));
+    assert!(match_pattern("dog", "d.g"));
+    assert!(!match_pattern("dg", "d.g"));
+}
