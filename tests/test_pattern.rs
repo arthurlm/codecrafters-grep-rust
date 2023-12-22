@@ -17,6 +17,10 @@ fn test_parse_pattern() {
     let (r, x) = Pattern::parse(r"[abc]").unwrap();
     assert_eq!(x, Pattern::PositiveCharGroup(vec!['a', 'b', 'c']));
     assert_eq!(r, "");
+
+    let (r, x) = Pattern::parse(r"[^defg]").unwrap();
+    assert_eq!(x, Pattern::NegativeCharGroup(vec!['d', 'e', 'f', 'g']));
+    assert_eq!(r, "");
 }
 
 #[test]

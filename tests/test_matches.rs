@@ -28,3 +28,10 @@ fn test_match_pos_chars_group() {
     assert!(p.matches("apple"));
     assert!(!p.matches("dog"));
 }
+
+#[test]
+fn test_match_neg_chars_group() {
+    let p = Pattern::NegativeCharGroup(vec!['a', 'b', 'c']);
+    assert!(p.matches("dog"));
+    assert!(!p.matches("cab"));
+}

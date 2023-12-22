@@ -8,6 +8,7 @@ pub enum Pattern {
     Digit,
     Chars,
     PositiveCharGroup(Vec<char>),
+    NegativeCharGroup(Vec<char>),
 }
 
 impl Pattern {
@@ -21,8 +22,15 @@ impl Pattern {
                 None => Err(GrepError::InvalidPattern),
                 Some(end) => {
                     let sub_input = &input[1..end];
-                    let chars = sub_input.chars().collect();
-                    Ok((&input[end + 1..], Self::PositiveCharGroup(chars)))
+                    let mut chars: Vec<_> = sub_input.chars().collect();
+                    if chars.first().copied() == Some('^') {
+                        Ok((
+                            &input[end + 1..],
+                            Self::NegativeCharGroup(chars.drain(1..).collect()),
+                        ))
+                    } else {
+                        Ok((&input[end + 1..], Self::PositiveCharGroup(chars)))
+                    }
                 }
             }
         } else if input.is_empty() {
@@ -38,6 +46,7 @@ impl Pattern {
             Self::Digit => input_line.chars().any(|x| x.is_digit(10)),
             Self::Chars => input_line.chars().any(|x| x.is_ascii_alphanumeric()),
             Self::PositiveCharGroup(values) => input_line.chars().any(|x| values.contains(&x)),
+            Self::NegativeCharGroup(values) => input_line.chars().all(|x| !values.contains(&x)),
         }
     }
 }
