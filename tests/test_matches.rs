@@ -11,7 +11,6 @@ fn test_match_text() {
             Pattern::Literal('o'),
         ],
         start_string_anchor: false,
-        end_string_anchor: false,
     };
     assert!(r.matches("hey ! hello world"));
     assert!(!r.matches("Yeah"));
@@ -22,7 +21,6 @@ fn test_match_digit() {
     let re = Regexp {
         patterns: vec![Pattern::Digit],
         start_string_anchor: false,
-        end_string_anchor: false,
     };
     assert!(re.matches("hey89world"));
     assert!(!re.matches("Yeah"));
@@ -33,7 +31,6 @@ fn test_match_chars() {
     let re = Regexp {
         patterns: vec![Pattern::Chars],
         start_string_anchor: false,
-        end_string_anchor: false,
     };
     assert!(re.matches("alpha-num3ric"));
     assert!(re.matches("foo101"));
@@ -45,7 +42,6 @@ fn test_match_pos_chars_group() {
     let re = Regexp {
         patterns: vec![Pattern::PositiveCharGroup(vec!['a', 'b', 'c'])],
         start_string_anchor: false,
-        end_string_anchor: false,
     };
     assert!(re.matches("apple"));
     assert!(!re.matches("dog"));
@@ -56,7 +52,6 @@ fn test_match_neg_chars_group() {
     let re = Regexp {
         patterns: vec![Pattern::NegativeCharGroup(vec!['a', 'b', 'c'])],
         start_string_anchor: false,
-        end_string_anchor: false,
     };
     assert!(re.matches("dog"));
     assert!(!re.matches("cab"));
@@ -77,7 +72,6 @@ fn test_match_seq() {
             Pattern::Literal('e'),
         ],
         start_string_anchor: false,
-        end_string_anchor: false,
     };
 
     assert!(re.matches("100 apples"));

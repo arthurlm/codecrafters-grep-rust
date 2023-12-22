@@ -11,7 +11,6 @@ pub fn match_pattern(input_line: &str, input_pattern: &str) -> bool {
 pub struct Regexp {
     pub patterns: Vec<Pattern>,
     pub start_string_anchor: bool,
-    pub end_string_anchor: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -21,6 +20,7 @@ pub enum Pattern {
     Chars,
     PositiveCharGroup(Vec<char>),
     NegativeCharGroup(Vec<char>),
+    End,
 }
 
 impl Regexp {
@@ -53,10 +53,13 @@ impl Regexp {
         }
 
         // Build output
+        if end_string_anchor {
+            patterns.push(Pattern::End);
+        }
+
         Ok(Self {
             patterns,
             start_string_anchor,
-            end_string_anchor,
         })
     }
 
@@ -73,6 +76,8 @@ impl Regexp {
                     input_idx += 1;
                     pattern_idx += 1;
                 }
+                // Check end pattern
+                (None, Some(Pattern::End)) => return Some(input_idx),
                 // If there is no more pattern
                 (_, None) => return Some(input_idx),
                 // It there is some pattern left and it did not match whatever char we have
@@ -82,23 +87,11 @@ impl Regexp {
     }
 
     pub fn matches(&self, input_line: &str) -> bool {
-        fn match_end(this: &Regexp, end_index: Option<usize>, input_len: usize) -> bool {
-            if this.end_string_anchor {
-                matches!(end_index, Some(idx) if idx == input_len)
-            } else {
-                end_index.is_some()
-            }
-        }
-
         if self.start_string_anchor {
-            match_end(&self, self.match_at_beginning(input_line), input_line.len())
+            self.match_at_beginning(input_line).is_some()
         } else {
             for start_idx in 0..input_line.len() {
-                if match_end(
-                    &self,
-                    self.match_at_beginning(&input_line[start_idx..]),
-                    input_line.len(),
-                ) {
+                if self.match_at_beginning(&input_line[start_idx..]).is_some() {
                     return true;
                 }
             }
@@ -150,6 +143,7 @@ impl Pattern {
             Self::Chars => input_char.is_alphanumeric(),
             Self::PositiveCharGroup(values) => values.contains(&input_char),
             Self::NegativeCharGroup(values) => !values.contains(&input_char),
+            Self::End => false,
         }
     }
 }
