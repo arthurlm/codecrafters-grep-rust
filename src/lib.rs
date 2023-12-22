@@ -10,7 +10,6 @@ pub fn match_pattern(input_line: &str, input_pattern: &str) -> bool {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Regexp {
     pub patterns: Vec<Pattern>,
-    pub start_string_anchor: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -20,6 +19,7 @@ pub enum Pattern {
     Chars,
     PositiveCharGroup(Vec<char>),
     NegativeCharGroup(Vec<char>),
+    Start,
     End,
 }
 
@@ -53,19 +53,20 @@ impl Regexp {
         }
 
         // Build output
+        if start_string_anchor {
+            patterns.insert(0, Pattern::Start);
+        }
+
         if end_string_anchor {
             patterns.push(Pattern::End);
         }
 
-        Ok(Self {
-            patterns,
-            start_string_anchor,
-        })
+        Ok(Self { patterns })
     }
 
     pub fn matches(&self, input_line: &str) -> bool {
-        if self.start_string_anchor {
-            match_here(&self.patterns, input_line)
+        if self.patterns.first() == Some(&Pattern::Start) {
+            match_here(&self.patterns[1..], input_line)
         } else {
             for start_idx in 0..input_line.len() {
                 if match_here(&self.patterns, &input_line[start_idx..]) {

@@ -12,7 +12,6 @@ fn test_parse_pattern() {
                 Pattern::Literal('l'),
                 Pattern::Literal('o'),
             ],
-            start_string_anchor: false,
         }
     );
 
@@ -20,7 +19,6 @@ fn test_parse_pattern() {
         Regexp::parse(r"\d").unwrap(),
         Regexp {
             patterns: vec![Pattern::Digit],
-            start_string_anchor: false,
         }
     );
 
@@ -28,7 +26,6 @@ fn test_parse_pattern() {
         Regexp::parse(r"\w").unwrap(),
         Regexp {
             patterns: vec![Pattern::Chars],
-            start_string_anchor: false,
         }
     );
 
@@ -36,7 +33,6 @@ fn test_parse_pattern() {
         Regexp::parse(r"[abc]").unwrap(),
         Regexp {
             patterns: vec![Pattern::PositiveCharGroup(vec!['a', 'b', 'c'])],
-            start_string_anchor: false,
         }
     );
 
@@ -44,7 +40,6 @@ fn test_parse_pattern() {
         Regexp::parse(r"[^defg]").unwrap(),
         Regexp {
             patterns: vec![Pattern::NegativeCharGroup(vec!['d', 'e', 'f', 'g'])],
-            start_string_anchor: false,
         }
     );
 
@@ -60,7 +55,6 @@ fn test_parse_pattern() {
                 Pattern::Literal('l'),
                 Pattern::Literal('e'),
             ],
-            start_string_anchor: false,
         }
     );
 
@@ -78,7 +72,6 @@ fn test_parse_pattern() {
                 Pattern::Literal('l'),
                 Pattern::Literal('e'),
             ],
-            start_string_anchor: false,
         }
     );
 
@@ -90,15 +83,13 @@ fn test_parse_pattern() {
                 Pattern::Literal('^'),
                 Pattern::Literal('d'),
             ],
-            start_string_anchor: false,
         }
     );
 
     assert_eq!(
         Regexp::parse(r"^\dd").unwrap(),
         Regexp {
-            patterns: vec![Pattern::Digit, Pattern::Literal('d')],
-            start_string_anchor: true,
+            patterns: vec![Pattern::Start, Pattern::Digit, Pattern::Literal('d')],
         }
     );
 
@@ -110,7 +101,6 @@ fn test_parse_pattern() {
                 Pattern::Literal('$'),
                 Pattern::Literal('d'),
             ],
-            start_string_anchor: false,
         }
     );
 
@@ -118,7 +108,6 @@ fn test_parse_pattern() {
         Regexp::parse(r"\dd$").unwrap(),
         Regexp {
             patterns: vec![Pattern::Digit, Pattern::Literal('d'), Pattern::End],
-            start_string_anchor: false,
         }
     );
 }
