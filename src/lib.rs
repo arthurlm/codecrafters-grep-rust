@@ -2,34 +2,42 @@ mod error;
 
 pub use error::*;
 
-use std::str::FromStr;
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum Pattern {
     Text(String),
     Digit,
     Chars,
+    PositiveCharGroup(Vec<char>),
 }
 
 impl Pattern {
-    pub fn matches(&self, input_line: &str) -> bool {
-        match self {
-            Pattern::Text(expected_text) => input_line.contains(expected_text),
-            Pattern::Digit => input_line.chars().any(|x| x.is_digit(10)),
-            Pattern::Chars => input_line.chars().any(|x| x.is_ascii_alphanumeric()),
+    pub fn parse(input: &str) -> Result<(&str, Self), GrepError> {
+        if input.starts_with(r"\d") {
+            Ok((&input[2..], Self::Digit))
+        } else if input.starts_with(r"\w") {
+            Ok((&input[2..], Self::Chars))
+        } else if input.starts_with(r"[") {
+            match input.chars().position(|c| c == ']') {
+                None => Err(GrepError::InvalidPattern),
+                Some(end) => {
+                    let sub_input = &input[1..end];
+                    let chars = sub_input.chars().collect();
+                    Ok((&input[end + 1..], Self::PositiveCharGroup(chars)))
+                }
+            }
+        } else if input.is_empty() {
+            Err(GrepError::InvalidPattern)
+        } else {
+            Ok(("", Self::Text(input.to_string())))
         }
     }
-}
 
-impl FromStr for Pattern {
-    type Err = GrepError;
-
-    fn from_str(input: &str) -> Result<Self, Self::Err> {
-        match input {
-            r"\d" => Ok(Pattern::Digit),
-            r"\w" => Ok(Pattern::Chars),
-            x if x.is_empty() => Err(GrepError::InvalidPattern),
-            _ => Ok(Pattern::Text(input.to_string())),
+    pub fn matches(&self, input_line: &str) -> bool {
+        match self {
+            Self::Text(expected_text) => input_line.contains(expected_text),
+            Self::Digit => input_line.chars().any(|x| x.is_digit(10)),
+            Self::Chars => input_line.chars().any(|x| x.is_ascii_alphanumeric()),
+            Self::PositiveCharGroup(values) => input_line.chars().any(|x| values.contains(&x)),
         }
     }
 }

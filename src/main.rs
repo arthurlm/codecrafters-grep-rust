@@ -2,8 +2,8 @@ use std::{env, io, process};
 
 use grep_starter_rust::Pattern;
 
-fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    let pattern: Pattern = pattern.parse().expect("Unhandled pattern");
+fn match_pattern(input_line: &str, input_pattern: &str) -> bool {
+    let (_, pattern) = Pattern::parse(input_pattern).expect("Unhandled pattern");
     pattern.matches(input_line)
 }
 

@@ -21,3 +21,10 @@ fn test_match_chars() {
     assert!(p.matches("foo101"));
     assert!(!p.matches("$!?"));
 }
+
+#[test]
+fn test_match_pos_chars_group() {
+    let p = Pattern::PositiveCharGroup(vec!['a', 'b', 'c']);
+    assert!(p.matches("apple"));
+    assert!(!p.matches("dog"));
+}
