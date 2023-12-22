@@ -1,11 +1,10 @@
 use std::{env, io, process};
 
+use grep_starter_rust::Pattern;
+
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    if pattern.chars().count() == 1 {
-        input_line.contains(pattern)
-    } else {
-        panic!("Unhandled pattern: {}", pattern)
-    }
+    let pattern: Pattern = pattern.parse().expect("Unhandled pattern");
+    pattern.matches(input_line)
 }
 
 // Usage: echo <input_text> | your_grep.sh -E <pattern>
