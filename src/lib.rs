@@ -8,6 +8,7 @@ use std::str::FromStr;
 pub enum Pattern {
     Text(String),
     Digit,
+    Chars,
 }
 
 impl Pattern {
@@ -15,6 +16,7 @@ impl Pattern {
         match self {
             Pattern::Text(expected_text) => input_line.contains(expected_text),
             Pattern::Digit => input_line.chars().any(|x| x.is_digit(10)),
+            Pattern::Chars => input_line.chars().any(|x| x.is_ascii_alphanumeric()),
         }
     }
 }
@@ -25,6 +27,7 @@ impl FromStr for Pattern {
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
             r"\d" => Ok(Pattern::Digit),
+            r"\w" => Ok(Pattern::Chars),
             x if x.is_empty() => Err(GrepError::InvalidPattern),
             _ => Ok(Pattern::Text(input.to_string())),
         }

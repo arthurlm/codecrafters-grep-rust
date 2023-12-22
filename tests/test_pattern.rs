@@ -7,6 +7,9 @@ fn test_parse_pattern() {
 
     let x: Pattern = r"\d".parse().unwrap();
     assert_eq!(x, Pattern::Digit);
+
+    let x: Pattern = r"\w".parse().unwrap();
+    assert_eq!(x, Pattern::Chars);
 }
 
 #[test]
