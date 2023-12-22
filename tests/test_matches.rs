@@ -89,6 +89,25 @@ fn test_end_string() {
 fn test_one_or_more() {
     assert!(match_pattern("apple", "a+"));
     assert!(match_pattern("SaaS", "a+"));
+    assert!(match_pattern("apple", "a+pple"));
+    assert!(!match_pattern("ale", "a+p+le"));
+    assert!(!match_pattern("ple", "a+p+le"));
+    assert!(match_pattern("aple", "a+p+le"));
+    assert!(match_pattern("aaaapppppple", "a+p+le"));
+    assert!(match_pattern("aaaapppppple", "^a+p+le$"));
+    assert!(!match_pattern("appLE", "a+pple"));
     assert!(match_pattern("SaaS", "^Sa+S$"));
     assert!(!match_pattern("dogs", "a+"));
+}
+
+#[test]
+fn test_zero_or_one() {
+    assert!(match_pattern("dog", "dogs?"));
+    assert!(match_pattern("dogs", "dogs?"));
+    assert!(match_pattern("dogy", "dogs?"));
+    assert!(match_pattern("dogy", "dogs?y"));
+    assert!(match_pattern("dogsy", "dogs?y"));
+    assert!(!match_pattern("dogoy", "dogs?y"));
+    assert!(match_pattern("dog", "^dogs?$"));
+    assert!(match_pattern("dogs", "^dogs?$"));
 }

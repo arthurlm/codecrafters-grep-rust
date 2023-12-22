@@ -22,6 +22,7 @@ pub enum Pattern {
     Start,
     End,
     OneOrMore(Box<Pattern>),
+    ZeroOrOne(Box<Pattern>),
 }
 
 impl Regexp {
@@ -49,6 +50,12 @@ impl Regexp {
                 input = next_input;
                 let prev = patterns.pop().ok_or(GrepError::InvalidPattern)?;
                 patterns.push(Pattern::OneOrMore(Box::new(prev)));
+            }
+
+            if let Some(next_input) = input.strip_prefix("?") {
+                input = next_input;
+                let prev = patterns.pop().ok_or(GrepError::InvalidPattern)?;
+                patterns.push(Pattern::ZeroOrOne(Box::new(prev)));
             }
 
             if input.is_empty() {
@@ -160,7 +167,18 @@ fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
                 }
             }
 
-            count > 0
+            if count > 0 {
+                match_here(&patterns[1..], &input_lines[count..])
+            } else {
+                false
+            }
+        }
+        (_, Some(Pattern::ZeroOrOne(pattern))) => {
+            if match_here(&[pattern.as_ref().clone()], &input_lines) {
+                match_here(&patterns[1..], &input_lines[1..])
+            } else {
+                match_here(&patterns[1..], input_lines)
+            }
         }
         // Check end pattern
         (None, Some(Pattern::End)) => true,
