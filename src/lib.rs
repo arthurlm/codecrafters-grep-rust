@@ -59,15 +59,15 @@ impl Regexp {
 
 impl Pattern {
     pub fn parse(input: &str) -> Result<(&str, Self), GrepError> {
-        if let Some(new_input) = input.strip_prefix(r"\d") {
-            Ok((new_input, Self::Digit))
-        } else if let Some(new_input) = input.strip_prefix(r"\w") {
-            Ok((new_input, Self::Chars))
-        } else if input.starts_with('[') {
+        if let Some(input) = input.strip_prefix(r"\d") {
+            Ok((input, Self::Digit))
+        } else if let Some(input) = input.strip_prefix(r"\w") {
+            Ok((input, Self::Chars))
+        } else if let Some(input) = input.strip_prefix('[') {
             match input.chars().position(|c| c == ']') {
                 None => Err(GrepError::InvalidPattern),
                 Some(end) => {
-                    let sub_input = &input[1..end];
+                    let sub_input = &input[..end];
                     let mut chars: Vec<_> = sub_input.chars().collect();
                     if chars.first().copied() == Some('^') {
                         Ok((
