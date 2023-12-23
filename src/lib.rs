@@ -24,7 +24,7 @@ pub enum Pattern {
     OneOrMore(Box<Pattern>),
     ZeroOrOne(Box<Pattern>),
     Wildcard,
-    Alternation(Vec<Pattern>),
+    Alternation(Vec<Vec<Pattern>>),
 }
 
 impl Regexp {
@@ -113,6 +113,11 @@ impl Pattern {
                 None => Err(GrepError::InvalidPattern),
                 Some(end) => {
                     let sub_input = &input[..end];
+                    assert!(
+                        !sub_input.contains('['),
+                        "unsupported nested char groups parse"
+                    );
+
                     let mut chars: Vec<_> = sub_input.chars().collect();
                     if chars.first().copied() == Some('^') {
                         Ok((
@@ -122,6 +127,32 @@ impl Pattern {
                     } else {
                         Ok((&input[end + 1..], Self::PositiveCharGroup(chars)))
                     }
+                }
+            }
+        } else if let Some(input) = input.strip_prefix('(') {
+            match input.chars().position(|c| c == ')') {
+                None => Err(GrepError::InvalidPattern),
+                Some(end) => {
+                    let sub_input = &input[..end];
+                    assert!(
+                        !sub_input.contains('('),
+                        "unsupported nested alternation parse"
+                    );
+
+                    let mut alternations = Vec::new();
+                    for mut sub_sequence in sub_input.split('|') {
+                        let mut alternation = Vec::new();
+
+                        while !sub_sequence.is_empty() {
+                            let (next_sub_sequence, pattern) = Pattern::parse(&sub_sequence)?;
+                            alternation.push(pattern);
+                            sub_sequence = next_sub_sequence;
+                        }
+
+                        alternations.push(alternation);
+                    }
+
+                    Ok((&input[end + 1..], Self::Alternation(alternations)))
                 }
             }
         } else if input.is_empty() {
@@ -181,6 +212,11 @@ fn match_here(patterns: &[Pattern], input_line: &str) -> bool {
             match_here(rem_patterns, input_line)
             // Or Match one
             | match_here(&concat_patterns(&pattern, rem_patterns), input_line)
+        }
+        (_, Some((Pattern::Alternation(alternations), rem_patterns))) => {
+            alternations.iter().any(|alt| match_here(&alt, input_line))
+            // FIXME: make full impl
+            // & match_here(rem_patterns, ???)
         }
         // Check end pattern
         (None, Some((Pattern::End, _rem_patterns))) => true,

@@ -139,6 +139,55 @@ fn test_parse_pattern() {
             ],
         }
     );
+
+    assert_eq!(
+        Regexp::parse(r"(cat|dog)").unwrap(),
+        Regexp {
+            patterns: vec![Pattern::Alternation(vec![
+                vec![
+                    Pattern::Literal('c'),
+                    Pattern::Literal('a'),
+                    Pattern::Literal('t')
+                ],
+                vec![
+                    Pattern::Literal('d'),
+                    Pattern::Literal('o'),
+                    Pattern::Literal('g')
+                ]
+            ])],
+        }
+    );
+
+    assert_eq!(
+        Regexp::parse(r"^\d (cat|dog|duc\w)s?$").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Start,
+                Pattern::Digit,
+                Pattern::Literal(' '),
+                Pattern::Alternation(vec![
+                    vec![
+                        Pattern::Literal('c'),
+                        Pattern::Literal('a'),
+                        Pattern::Literal('t')
+                    ],
+                    vec![
+                        Pattern::Literal('d'),
+                        Pattern::Literal('o'),
+                        Pattern::Literal('g')
+                    ],
+                    vec![
+                        Pattern::Literal('d'),
+                        Pattern::Literal('u'),
+                        Pattern::Literal('c'),
+                        Pattern::Chars,
+                    ],
+                ]),
+                Pattern::ZeroOrOne(Box::new(Pattern::Literal('s'))),
+                Pattern::End,
+            ],
+        }
+    );
 }
 
 #[test]

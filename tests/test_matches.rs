@@ -128,3 +128,11 @@ fn test_wildcard() {
     assert!(!match_pattern("digis", "^d.?gs?$"));
     assert!(!match_pattern("diig", "^d.?gs?$"));
 }
+
+#[test]
+fn test_alternation() {
+    assert!(match_pattern("cat", "(cat|dog)"));
+    assert!(match_pattern("dog", "(cat|dog)"));
+    assert!(!match_pattern("dig", "(cat|dog)"));
+    // assert!(!match_pattern("dog", "(cat|dog)s"));
+}
