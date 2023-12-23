@@ -98,6 +98,7 @@ fn test_one_or_more() {
     assert!(!match_pattern("appLE", "a+pple"));
     assert!(match_pattern("SaaS", "^Sa+S$"));
     assert!(!match_pattern("dogs", "a+"));
+    assert!(match_pattern("dogs", "d.+gs$"));
 }
 
 #[test]

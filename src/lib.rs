@@ -165,30 +165,21 @@ fn match_here(patterns: &[Pattern], input_line: &str) -> bool {
             match_here(rem_patterns, &input_line[1..])
         }
         (_, Some((Pattern::OneOrMore(pattern), rem_patterns))) => {
-            let mut count = 0;
-
-            loop {
-                if match_here(&[pattern.as_ref().clone()], &input_line[count..]) {
-                    count += 1;
-                } else {
-                    break;
-                }
+            // Match at least once the inner pattern
+            if !match_here(&[pattern.as_ref().clone()], input_line) {
+                return false;
             }
 
-            if count > 0 {
-                match_here(rem_patterns, &input_line[count..])
-            } else {
-                false
-            }
+            // Then continue recursion
+            match_here(rem_patterns, &input_line[1..])
+            // Or retry again current pattern sequence on next input
+            | match_here(patterns, &input_line[1..])
         }
         (_, Some((Pattern::ZeroOrOne(pattern), rem_patterns))) => {
-            let mut next_patterns = rem_patterns.to_vec();
-            next_patterns.insert(0, pattern.as_ref().clone());
-
             // Match zero
-            match_here(rem_patterns, input_line) |
-                // Match one
-                match_here(&next_patterns, input_line)
+            match_here(rem_patterns, input_line)
+            // Or Match one
+            | match_here(&concat_patterns(&pattern, rem_patterns), input_line)
         }
         // Check end pattern
         (None, Some((Pattern::End, _rem_patterns))) => true,
@@ -197,4 +188,11 @@ fn match_here(patterns: &[Pattern], input_line: &str) -> bool {
         // // It there is some pattern left and it did not match whatever char we have
         (_, Some(_)) => false,
     }
+}
+
+fn concat_patterns(item: &Pattern, items: &[Pattern]) -> Vec<Pattern> {
+    let mut output = Vec::with_capacity(items.len() + 1);
+    output.push(item.clone());
+    output.extend(items.iter().map(|x| x.clone()));
+    output
 }
