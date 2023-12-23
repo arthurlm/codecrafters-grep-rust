@@ -137,34 +137,38 @@ impl Pattern {
     }
 }
 
-fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
-    match (input_lines.chars().next(), patterns.first()) {
+fn match_here(patterns: &[Pattern], input_line: &str) -> bool {
+    match (input_line.chars().next(), patterns.split_first()) {
         // Check if pattern and current char match
-        (Some(input_char), Some(Pattern::Literal(char))) if input_char == *char => {
-            match_here(&patterns[1..], &input_lines[1..])
+        (Some(input_char), Some((Pattern::Literal(char), rem_patterns))) if input_char == *char => {
+            match_here(rem_patterns, &input_line[1..])
         }
-        (Some(input_char), Some(Pattern::Digit)) if input_char.is_ascii_digit() => {
-            match_here(&patterns[1..], &input_lines[1..])
+        (Some(input_char), Some((Pattern::Digit, rem_patterns))) if input_char.is_ascii_digit() => {
+            match_here(rem_patterns, &input_line[1..])
         }
-        (Some(input_char), Some(Pattern::Chars)) if input_char.is_alphanumeric() => {
-            match_here(&patterns[1..], &input_lines[1..])
+        (Some(input_char), Some((Pattern::Chars, rem_patterns)))
+            if input_char.is_alphanumeric() =>
+        {
+            match_here(rem_patterns, &input_line[1..])
         }
-        (Some(input_char), Some(Pattern::PositiveCharGroup(values)))
+        (Some(input_char), Some((Pattern::PositiveCharGroup(values), rem_patterns)))
             if values.contains(&input_char) =>
         {
-            match_here(&patterns[1..], &input_lines[1..])
+            match_here(rem_patterns, &input_line[1..])
         }
-        (Some(input_char), Some(Pattern::NegativeCharGroup(values)))
+        (Some(input_char), Some((Pattern::NegativeCharGroup(values), rem_patterns)))
             if !values.contains(&input_char) =>
         {
-            match_here(&patterns[1..], &input_lines[1..])
+            match_here(rem_patterns, &input_line[1..])
         }
-        (Some(_), Some(Pattern::Wildcard)) => match_here(&patterns[1..], &input_lines[1..]),
-        (_, Some(Pattern::OneOrMore(pattern))) => {
+        (Some(_), Some((Pattern::Wildcard, rem_patterns))) => {
+            match_here(rem_patterns, &input_line[1..])
+        }
+        (_, Some((Pattern::OneOrMore(pattern), rem_patterns))) => {
             let mut count = 0;
 
             loop {
-                if match_here(&[pattern.as_ref().clone()], &input_lines[count..]) {
+                if match_here(&[pattern.as_ref().clone()], &input_line[count..]) {
                     count += 1;
                 } else {
                     break;
@@ -172,19 +176,22 @@ fn match_here(patterns: &[Pattern], input_lines: &str) -> bool {
             }
 
             if count > 0 {
-                match_here(&patterns[1..], &input_lines[count..])
+                match_here(rem_patterns, &input_line[count..])
             } else {
                 false
             }
         }
-        (_, Some(Pattern::ZeroOrOne(pattern))) => {
-            let mut next_patterns = patterns.to_vec();
+        (_, Some((Pattern::ZeroOrOne(pattern), rem_patterns))) => {
+            let mut next_patterns = rem_patterns.to_vec();
             next_patterns.insert(0, pattern.as_ref().clone());
 
-            match_here(&next_patterns, input_lines) | match_here(&patterns[1..], input_lines)
+            // Match zero
+            match_here(rem_patterns, input_line) |
+                // Match one
+                match_here(&next_patterns, input_line)
         }
         // Check end pattern
-        (None, Some(Pattern::End)) => true,
+        (None, Some((Pattern::End, _rem_patterns))) => true,
         // If there is no more pattern
         (_, None) => true,
         // // It there is some pattern left and it did not match whatever char we have
