@@ -2,75 +2,40 @@ use grep_starter_rust::*;
 
 #[test]
 fn test_match_text() {
-    let r = Regexp {
-        patterns: vec![
-            Pattern::Literal('h'),
-            Pattern::Literal('e'),
-            Pattern::Literal('l'),
-            Pattern::Literal('l'),
-            Pattern::Literal('o'),
-        ],
-    };
-    assert!(r.matches("hey ! hello world"));
-    assert!(!r.matches("Yeah"));
+    assert!(match_pattern("hey ! hello world", "hello"));
+    assert!(!match_pattern("Yeah", "hello"));
 }
 
 #[test]
 fn test_match_digit() {
-    let re = Regexp {
-        patterns: vec![Pattern::Digit],
-    };
-    assert!(re.matches("hey89world"));
-    assert!(!re.matches("Yeah"));
+    assert!(match_pattern("hey89world", r"\d"));
+    assert!(!match_pattern("Yeah", r"\d"));
 }
 
 #[test]
 fn test_match_chars() {
-    let re = Regexp {
-        patterns: vec![Pattern::Chars],
-    };
-    assert!(re.matches("alpha-num3ric"));
-    assert!(re.matches("foo101"));
-    assert!(!re.matches("$!?"));
+    assert!(match_pattern("alpha-num3ric", r"\w"));
+    assert!(match_pattern("foo101", r"\w"));
+    assert!(!match_pattern("$!?", r"\w"));
 }
 
 #[test]
 fn test_match_pos_chars_group() {
-    let re = Regexp {
-        patterns: vec![Pattern::PositiveCharGroup(vec!['a', 'b', 'c'])],
-    };
-    assert!(re.matches("apple"));
-    assert!(!re.matches("dog"));
+    assert!(match_pattern("apple", r"[abc]"));
+    assert!(!match_pattern("dog", r"[abc]"));
 }
 
 #[test]
 fn test_match_neg_chars_group() {
-    let re = Regexp {
-        patterns: vec![Pattern::NegativeCharGroup(vec!['a', 'b', 'c'])],
-    };
-    assert!(re.matches("dog"));
-    assert!(!re.matches("cab"));
+    assert!(match_pattern("dog", r"[^abc]"));
+    assert!(!match_pattern("cab", r"[^abc]"));
 }
 
 #[test]
 fn test_match_seq() {
-    let re = Regexp {
-        patterns: vec![
-            Pattern::Digit,
-            Pattern::Digit,
-            Pattern::Digit,
-            Pattern::Literal(' '),
-            Pattern::Literal('a'),
-            Pattern::Literal('p'),
-            Pattern::Literal('p'),
-            Pattern::Literal('l'),
-            Pattern::Literal('e'),
-        ],
-    };
-
-    assert!(re.matches("100 apples"));
-    assert!(!re.matches("1 apple"));
-    assert!(!re.matches("cab"));
+    assert!(match_pattern("100 apples", r"\d\d\d apple"));
+    assert!(!match_pattern("1 apple", r"\d\d\d apple"));
+    assert!(!match_pattern("cab", r"\d\d\d apple"));
 }
 
 #[test]
