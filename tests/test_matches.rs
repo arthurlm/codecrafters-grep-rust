@@ -99,5 +99,10 @@ fn test_alternation() {
     assert!(match_pattern("cat", "(cat|dog)"));
     assert!(match_pattern("dog", "(cat|dog)"));
     assert!(!match_pattern("dig", "(cat|dog)"));
-    // assert!(!match_pattern("dog", "(cat|dog)s"));
+    assert!(!match_pattern("dog", "(cat|dog)s"));
+    assert!(match_pattern(" dogs", "(some|more)? (cat|dog)s"));
+    assert!(match_pattern("some dogs", "(some|more) (cat|dog)s"));
+    assert!(!match_pattern("more cat", "(some|more) (cat|dog)s"));
+    assert!(match_pattern("more cat", "(some|more) (cat|dog)s?"));
+    assert!(!match_pattern("none dogs", "(some|more) (cat|dog)s"));
 }

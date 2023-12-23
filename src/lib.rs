@@ -144,7 +144,7 @@ impl Pattern {
                         let mut alternation = Vec::new();
 
                         while !sub_sequence.is_empty() {
-                            let (next_sub_sequence, pattern) = Pattern::parse(&sub_sequence)?;
+                            let (next_sub_sequence, pattern) = Pattern::parse(sub_sequence)?;
                             alternation.push(pattern);
                             sub_sequence = next_sub_sequence;
                         }
@@ -211,13 +211,11 @@ fn match_here(patterns: &[Pattern], input_line: &str) -> bool {
             // Match zero
             match_here(rem_patterns, input_line)
             // Or Match one
-            | match_here(&concat_patterns(&pattern, rem_patterns), input_line)
+            | match_here(&concat_pattern(pattern, rem_patterns), input_line)
         }
-        (_, Some((Pattern::Alternation(alternations), rem_patterns))) => {
-            alternations.iter().any(|alt| match_here(&alt, input_line))
-            // FIXME: make full impl
-            // & match_here(rem_patterns, ???)
-        }
+        (_, Some((Pattern::Alternation(alternations), rem_patterns))) => alternations
+            .iter()
+            .any(|alt| match_here(&concat_patterns(alt, rem_patterns), input_line)),
         // Check end pattern
         (None, Some((Pattern::End, _rem_patterns))) => true,
         // If there is no more pattern
@@ -227,9 +225,16 @@ fn match_here(patterns: &[Pattern], input_line: &str) -> bool {
     }
 }
 
-fn concat_patterns(item: &Pattern, items: &[Pattern]) -> Vec<Pattern> {
+fn concat_pattern(item: &Pattern, items: &[Pattern]) -> Vec<Pattern> {
     let mut output = Vec::with_capacity(items.len() + 1);
     output.push(item.clone());
-    output.extend(items.iter().map(|x| x.clone()));
+    output.extend(items.iter().cloned());
+    output
+}
+
+fn concat_patterns(a: &[Pattern], b: &[Pattern]) -> Vec<Pattern> {
+    let mut output = Vec::with_capacity(a.len() + b.len());
+    output.extend(a.iter().cloned());
+    output.extend(b.iter().cloned());
     output
 }
