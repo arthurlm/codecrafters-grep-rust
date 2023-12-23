@@ -148,4 +148,10 @@ fn test_parse_invalid_pattern() {
 
     let e = Regexp::parse("[abc").unwrap_err();
     assert_eq!(e, GrepError::InvalidPattern);
+
+    let e = Regexp::parse("+").unwrap_err();
+    assert_eq!(e, GrepError::InvalidPattern);
+
+    let e = Regexp::parse("?").unwrap_err();
+    assert_eq!(e, GrepError::InvalidPattern);
 }

@@ -24,6 +24,7 @@ pub enum Pattern {
     OneOrMore(Box<Pattern>),
     ZeroOrOne(Box<Pattern>),
     Wildcard,
+    Alternation(Vec<Pattern>),
 }
 
 impl Regexp {
