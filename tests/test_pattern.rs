@@ -1,6 +1,20 @@
 use grep_starter_rust::*;
 
 #[test]
+fn test_debug() {
+    assert_eq!(format!("{:?}", Pattern::Chars), "Chars");
+    assert_eq!(
+        format!(
+            "{:?}",
+            Regexp {
+                patterns: vec![Pattern::Chars]
+            }
+        ),
+        "Regexp { patterns: [Chars] }"
+    );
+}
+
+#[test]
 fn test_parse_pattern() {
     assert_eq!(
         Regexp::parse(r"hello").unwrap(),
@@ -198,9 +212,29 @@ fn test_parse_invalid_pattern() {
     let e = Regexp::parse("[abc").unwrap_err();
     assert_eq!(e, GrepError::InvalidPattern);
 
+    let e = Regexp::parse("([abc|[def)").unwrap_err();
+    assert_eq!(e, GrepError::InvalidPattern);
+
     let e = Regexp::parse("+").unwrap_err();
     assert_eq!(e, GrepError::InvalidPattern);
 
     let e = Regexp::parse("?").unwrap_err();
+    assert_eq!(e, GrepError::InvalidPattern);
+
+    let e = Regexp::parse("(abc").unwrap_err();
+    assert_eq!(e, GrepError::InvalidPattern);
+}
+
+#[test]
+#[should_panic]
+fn test_valid_unsupported_pattern1() {
+    let e = Regexp::parse("((abc|def)|ghi)").unwrap_err();
+    assert_eq!(e, GrepError::InvalidPattern);
+}
+
+#[test]
+#[should_panic]
+fn test_valid_unsupported_pattern2() {
+    let e = Regexp::parse("[[abc]").unwrap_err();
     assert_eq!(e, GrepError::InvalidPattern);
 }
