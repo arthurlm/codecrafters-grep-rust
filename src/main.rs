@@ -14,7 +14,7 @@ fn main() {
 
     io::stdin().read_line(&mut input_line).unwrap();
 
-    if match_pattern(&input_line, &pattern) {
+    if match_pattern(&input_line, &pattern).is_some() {
         process::exit(0)
     } else {
         process::exit(1)

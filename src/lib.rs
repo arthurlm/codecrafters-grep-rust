@@ -2,7 +2,9 @@ mod error;
 
 pub use error::*;
 
-pub fn match_pattern(input_line: &str, input_pattern: &str) -> bool {
+pub type MatchResult = (usize, usize);
+
+pub fn match_pattern(input_line: &str, input_pattern: &str) -> Option<MatchResult> {
     let re = Regexp::parse(input_pattern).expect("Unhandled pattern");
     re.matches(input_line)
 }
@@ -85,17 +87,19 @@ impl Regexp {
         Ok(Self { patterns })
     }
 
-    pub fn matches(&self, input_line: &str) -> bool {
+    pub fn matches(&self, input_line: &str) -> Option<MatchResult> {
         if self.patterns.first() == Some(&Pattern::Start) {
-            match_here(&self.patterns[1..], input_line)
+            match_here(&self.patterns[1..], MatchContext::new(0, input_line))
         } else {
             for start_idx in 0..input_line.len() {
-                if match_here(&self.patterns, &input_line[start_idx..]) {
-                    return true;
+                if let Some(res) =
+                    match_here(&self.patterns, MatchContext::new(start_idx, input_line))
+                {
+                    return Some(res);
                 }
             }
 
-            false
+            None
         }
     }
 }
@@ -169,59 +173,67 @@ impl Pattern {
     }
 }
 
-fn match_here(patterns: &[Pattern], input_line: &str) -> bool {
-    match (input_line.chars().next(), patterns.split_first()) {
+fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult> {
+    match (context.first_char(), patterns.split_first()) {
         // Check if pattern and current char match
         (Some(input_char), Some((Pattern::Literal(char), rem_patterns))) if input_char == *char => {
-            match_here(rem_patterns, &input_line[1..])
+            match_here(rem_patterns, context.next_char())
         }
         (Some(input_char), Some((Pattern::Digit, rem_patterns))) if input_char.is_ascii_digit() => {
-            match_here(rem_patterns, &input_line[1..])
+            match_here(rem_patterns, context.next_char())
         }
         (Some(input_char), Some((Pattern::Chars, rem_patterns)))
             if input_char.is_alphanumeric() =>
         {
-            match_here(rem_patterns, &input_line[1..])
+            match_here(rem_patterns, context.next_char())
         }
         (Some(input_char), Some((Pattern::PositiveCharGroup(values), rem_patterns)))
             if values.contains(&input_char) =>
         {
-            match_here(rem_patterns, &input_line[1..])
+            match_here(rem_patterns, context.next_char())
         }
         (Some(input_char), Some((Pattern::NegativeCharGroup(values), rem_patterns)))
             if !values.contains(&input_char) =>
         {
-            match_here(rem_patterns, &input_line[1..])
+            match_here(rem_patterns, context.next_char())
         }
         (Some(_), Some((Pattern::Wildcard, rem_patterns))) => {
-            match_here(rem_patterns, &input_line[1..])
+            match_here(rem_patterns, context.next_char())
         }
         (_, Some((Pattern::OneOrMore(pattern), rem_patterns))) => {
             // Match at least once the inner pattern
-            if !match_here(&[pattern.as_ref().clone()], input_line) {
-                return false;
-            }
+            match_here(&[pattern.as_ref().clone()], context)?;
 
             // Then continue recursion
-            match_here(rem_patterns, &input_line[1..])
-            // Or retry again current pattern sequence on next input
-            | match_here(patterns, &input_line[1..])
+            match_here(rem_patterns, context.next_char()).or(
+                // Or retry again current pattern sequence on next input
+                match_here(patterns, context.next_char()),
+            )
         }
         (_, Some((Pattern::ZeroOrOne(pattern), rem_patterns))) => {
-            // Match zero
-            match_here(rem_patterns, input_line)
-            // Or Match one
-            | match_here(&concat_pattern(pattern, rem_patterns), input_line)
+            // Match one
+            match_here(&concat_pattern(pattern, rem_patterns), context).or(
+                // Match zero
+                match_here(rem_patterns, context),
+            )
         }
-        (_, Some((Pattern::Alternation(alternations), rem_patterns))) => alternations
-            .iter()
-            .any(|alt| match_here(&concat_patterns(alt, rem_patterns), input_line)),
+        (_, Some((Pattern::Alternation(alternations), rem_patterns))) => {
+            for alt in alternations {
+                if let Some(res) = match_here(&concat_patterns(alt, rem_patterns), context) {
+                    return Some(res);
+                }
+            }
+
+            None
+        }
         // Check end pattern
-        (None, Some((Pattern::End, _rem_patterns))) => true,
+        (None, Some((Pattern::End, _rem_patterns))) => {
+            Some((context.start_index, context.current_index))
+        }
         // If there is no more pattern
-        (_, None) => true,
+        (_, None) => Some((context.start_index, context.current_index)),
         // // It there is some pattern left and it did not match whatever char we have
-        (_, Some(_)) => false,
+        (_, Some(_)) => None,
     }
 }
 
@@ -237,4 +249,33 @@ fn concat_patterns(a: &[Pattern], b: &[Pattern]) -> Vec<Pattern> {
     output.extend(a.iter().cloned());
     output.extend(b.iter().cloned());
     output
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct MatchContext<'a> {
+    start_index: usize,
+    current_index: usize,
+    input_line: &'a str,
+}
+
+impl<'a> MatchContext<'a> {
+    pub fn new(start_index: usize, input_line: &'a str) -> Self {
+        Self {
+            start_index,
+            current_index: start_index,
+            input_line,
+        }
+    }
+
+    pub fn next_char(&self) -> Self {
+        Self {
+            start_index: self.start_index,
+            current_index: self.current_index + 1,
+            input_line: self.input_line,
+        }
+    }
+
+    pub fn first_char(&self) -> Option<char> {
+        self.input_line.chars().nth(self.current_index)
+    }
 }
