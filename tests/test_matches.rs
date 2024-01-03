@@ -117,4 +117,12 @@ fn test_alternation() {
         Some((0, 8))
     );
     assert_eq!(match_pattern("none dogs", "(some|more) (cat|dog)s"), None);
+    assert_eq!(
+        match_pattern(" cat and cat", r"(cat) and (cat)"),
+        Some((1, 12))
+    );
+    assert_eq!(
+        match_pattern(" cat and cat", r"(\w+) and (\w+)"),
+        Some((1, 12))
+    );
 }

@@ -173,7 +173,7 @@ fn test_parse_pattern() {
     );
 
     assert_eq!(
-        Regexp::parse(r"^\d (cat|dog|duc\w)s?$").unwrap(),
+        Regexp::parse(r"^\d (cat|dog\d+|duc\w)s?$").unwrap(),
         Regexp {
             patterns: vec![
                 Pattern::Start,
@@ -183,12 +183,13 @@ fn test_parse_pattern() {
                     vec![
                         Pattern::Literal('c'),
                         Pattern::Literal('a'),
-                        Pattern::Literal('t')
+                        Pattern::Literal('t'),
                     ],
                     vec![
                         Pattern::Literal('d'),
                         Pattern::Literal('o'),
-                        Pattern::Literal('g')
+                        Pattern::Literal('g'),
+                        Pattern::OneOrMore(Box::new(Pattern::Digit)),
                     ],
                     vec![
                         Pattern::Literal('d'),

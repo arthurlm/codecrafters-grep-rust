@@ -144,16 +144,9 @@ impl Pattern {
                     );
 
                     let mut alternations = Vec::new();
-                    for mut sub_sequence in sub_input.split('|') {
-                        let mut alternation = Vec::new();
-
-                        while !sub_sequence.is_empty() {
-                            let (next_sub_sequence, pattern) = Pattern::parse(sub_sequence)?;
-                            alternation.push(pattern);
-                            sub_sequence = next_sub_sequence;
-                        }
-
-                        alternations.push(alternation);
+                    for sub_sequence in sub_input.split('|') {
+                        let sub_re = Regexp::parse(sub_sequence)?;
+                        alternations.push(sub_re.patterns);
                     }
 
                     Ok((&input[end + 1..], Self::Alternation(alternations)))
