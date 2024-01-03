@@ -170,7 +170,7 @@ fn test_parse_pattern() {
                         Pattern::Literal('g')
                     ]
                 ],
-                id: 0,
+                id: 1,
             }],
         }
     );
@@ -202,7 +202,7 @@ fn test_parse_pattern() {
                             Pattern::Chars,
                         ],
                     ],
-                    id: 0,
+                    id: 1,
                 },
                 Pattern::ZeroOrOne(Box::new(Pattern::Literal('s'))),
                 Pattern::End,
@@ -213,7 +213,7 @@ fn test_parse_pattern() {
     assert_eq!(
         re_parse(r"\1").unwrap(),
         Regexp {
-            patterns: vec![Pattern::BackReference(0)],
+            patterns: vec![Pattern::BackReference(1)],
         }
     );
 
@@ -230,17 +230,17 @@ fn test_parse_pattern() {
                                 Pattern::Literal('a'),
                                 Pattern::Literal('t'),
                             ]],
-                            id: 1,
+                            id: 2,
                         },
                         Pattern::Literal(' '),
                         Pattern::Literal('a'),
                         Pattern::Literal('n'),
                         Pattern::Literal('d'),
                         Pattern::Literal(' '),
-                        Pattern::BackReference(1),
+                        Pattern::BackReference(2),
                         Pattern::Literal('\''),
                     ]],
-                    id: 0,
+                    id: 1,
                 },
                 Pattern::Literal(' '),
                 Pattern::Literal('i'),
@@ -258,7 +258,7 @@ fn test_parse_pattern() {
                 Pattern::Literal('a'),
                 Pattern::Literal('s'),
                 Pattern::Literal(' '),
-                Pattern::BackReference(0),
+                Pattern::BackReference(1),
             ]
         }
     );
@@ -282,7 +282,7 @@ fn test_parse_pattern() {
                                     Pattern::Literal('f'),
                                 ],
                             ],
-                            id: 1
+                            id: 2
                         }],
                         vec![
                             Pattern::Literal('g'),
@@ -290,7 +290,7 @@ fn test_parse_pattern() {
                             Pattern::Literal('i'),
                         ],
                     ],
-                    id: 0
+                    id: 1
                 },
                 Pattern::Alternation {
                     alternations: vec![
@@ -306,10 +306,10 @@ fn test_parse_pattern() {
                         ],
                         vec![Pattern::Alternation {
                             alternations: vec![vec![Pattern::OneOrMore(Box::new(Pattern::Chars))]],
-                            id: 3
+                            id: 4
                         }]
                     ],
-                    id: 2
+                    id: 3
                 },
                 Pattern::Alternation {
                     alternations: vec![vec![
@@ -317,7 +317,7 @@ fn test_parse_pattern() {
                         Pattern::Literal('q'),
                         Pattern::Literal('r'),
                     ]],
-                    id: 4
+                    id: 5
                 },
             ]
         }
