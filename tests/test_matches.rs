@@ -53,7 +53,7 @@ fn test_end_string() {
 #[test]
 fn test_one_or_more() {
     assert_eq!(match_pattern("apple", "a+"), Some((0, 1)));
-    assert_eq!(match_pattern("SaaS", "a+"), Some((1, 2)));
+    assert_eq!(match_pattern("SaaS", "a+"), Some((1, 3)));
     assert_eq!(match_pattern("apple", "a+pple"), Some((0, 5)));
     assert_eq!(match_pattern("ale", "a+p+le"), None);
     assert_eq!(match_pattern("ple", "a+p+le"), None);
@@ -64,6 +64,7 @@ fn test_one_or_more() {
     assert_eq!(match_pattern("SaaS", "^Sa+S$"), Some((0, 4)));
     assert_eq!(match_pattern("dogs", "a+"), None);
     assert_eq!(match_pattern("dogs", "d.+gs$"), Some((0, 4)));
+    assert_eq!(match_pattern(" cat and cat", r"\w+ and \w+"), Some((1, 12)));
 }
 
 #[test]
