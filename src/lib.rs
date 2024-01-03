@@ -30,7 +30,7 @@ pub enum Pattern {
     OneOrMore(Box<Pattern>),
     ZeroOrOne(Box<Pattern>),
     Wildcard,
-    Alternation(Vec<Vec<Pattern>>),
+    Alternation { alternations: Vec<Vec<Pattern>> },
     BackReference(usize),
 }
 
@@ -178,7 +178,7 @@ impl Pattern {
                 alternations.push(sub_re.patterns);
             }
 
-            Ok((&input[parse_end + 1..], Self::Alternation(alternations)))
+            Ok((&input[parse_end + 1..], Self::Alternation { alternations }))
         } else if input.is_empty() {
             Err(GrepError::InvalidPattern)
         } else {
@@ -241,7 +241,7 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
                 // Match zero
                 match_here(rem_patterns, context))
         }
-        (_, Some((Pattern::Alternation(alternations), rem_patterns))) => {
+        (_, Some((Pattern::Alternation { alternations }, rem_patterns))) => {
             for alt in alternations {
                 if let Some(alt_match) = match_here(
                     alt,

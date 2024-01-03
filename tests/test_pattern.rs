@@ -157,18 +157,20 @@ fn test_parse_pattern() {
     assert_eq!(
         re_parse(r"(cat|dog)").unwrap(),
         Regexp {
-            patterns: vec![Pattern::Alternation(vec![
-                vec![
-                    Pattern::Literal('c'),
-                    Pattern::Literal('a'),
-                    Pattern::Literal('t')
-                ],
-                vec![
-                    Pattern::Literal('d'),
-                    Pattern::Literal('o'),
-                    Pattern::Literal('g')
+            patterns: vec![Pattern::Alternation {
+                alternations: vec![
+                    vec![
+                        Pattern::Literal('c'),
+                        Pattern::Literal('a'),
+                        Pattern::Literal('t')
+                    ],
+                    vec![
+                        Pattern::Literal('d'),
+                        Pattern::Literal('o'),
+                        Pattern::Literal('g')
+                    ]
                 ]
-            ])],
+            }],
         }
     );
 
@@ -179,25 +181,27 @@ fn test_parse_pattern() {
                 Pattern::Start,
                 Pattern::Digit,
                 Pattern::Literal(' '),
-                Pattern::Alternation(vec![
-                    vec![
-                        Pattern::Literal('c'),
-                        Pattern::Literal('a'),
-                        Pattern::Literal('t'),
-                    ],
-                    vec![
-                        Pattern::Literal('d'),
-                        Pattern::Literal('o'),
-                        Pattern::Literal('g'),
-                        Pattern::OneOrMore(Box::new(Pattern::Digit)),
-                    ],
-                    vec![
-                        Pattern::Literal('d'),
-                        Pattern::Literal('u'),
-                        Pattern::Literal('c'),
-                        Pattern::Chars,
-                    ],
-                ]),
+                Pattern::Alternation {
+                    alternations: vec![
+                        vec![
+                            Pattern::Literal('c'),
+                            Pattern::Literal('a'),
+                            Pattern::Literal('t'),
+                        ],
+                        vec![
+                            Pattern::Literal('d'),
+                            Pattern::Literal('o'),
+                            Pattern::Literal('g'),
+                            Pattern::OneOrMore(Box::new(Pattern::Digit)),
+                        ],
+                        vec![
+                            Pattern::Literal('d'),
+                            Pattern::Literal('u'),
+                            Pattern::Literal('c'),
+                            Pattern::Chars,
+                        ],
+                    ]
+                },
                 Pattern::ZeroOrOne(Box::new(Pattern::Literal('s'))),
                 Pattern::End,
             ],
@@ -215,21 +219,25 @@ fn test_parse_pattern() {
         re_parse(r"('(cat) and \2') is the same as \1").unwrap(),
         Regexp {
             patterns: vec![
-                Pattern::Alternation(vec![vec![
-                    Pattern::Literal('\''),
-                    Pattern::Alternation(vec![vec![
-                        Pattern::Literal('c'),
+                Pattern::Alternation {
+                    alternations: vec![vec![
+                        Pattern::Literal('\''),
+                        Pattern::Alternation {
+                            alternations: vec![vec![
+                                Pattern::Literal('c'),
+                                Pattern::Literal('a'),
+                                Pattern::Literal('t'),
+                            ]]
+                        },
+                        Pattern::Literal(' '),
                         Pattern::Literal('a'),
-                        Pattern::Literal('t'),
-                    ]]),
-                    Pattern::Literal(' '),
-                    Pattern::Literal('a'),
-                    Pattern::Literal('n'),
-                    Pattern::Literal('d'),
-                    Pattern::Literal(' '),
-                    Pattern::BackReference(1),
-                    Pattern::Literal('\''),
-                ]]),
+                        Pattern::Literal('n'),
+                        Pattern::Literal('d'),
+                        Pattern::Literal(' '),
+                        Pattern::BackReference(1),
+                        Pattern::Literal('\''),
+                    ]]
+                },
                 Pattern::Literal(' '),
                 Pattern::Literal('i'),
                 Pattern::Literal('s'),
@@ -255,45 +263,53 @@ fn test_parse_pattern() {
         re_parse(r"((abc|def)|ghi)(jkl|mno|(\w+))(pqr)").unwrap(),
         Regexp {
             patterns: vec![
-                Pattern::Alternation(vec![
-                    vec![Pattern::Alternation(vec![
+                Pattern::Alternation {
+                    alternations: vec![
+                        vec![Pattern::Alternation {
+                            alternations: vec![
+                                vec![
+                                    Pattern::Literal('a'),
+                                    Pattern::Literal('b'),
+                                    Pattern::Literal('c'),
+                                ],
+                                vec![
+                                    Pattern::Literal('d'),
+                                    Pattern::Literal('e'),
+                                    Pattern::Literal('f'),
+                                ],
+                            ]
+                        }],
                         vec![
-                            Pattern::Literal('a'),
-                            Pattern::Literal('b'),
-                            Pattern::Literal('c'),
+                            Pattern::Literal('g'),
+                            Pattern::Literal('h'),
+                            Pattern::Literal('i'),
+                        ],
+                    ]
+                },
+                Pattern::Alternation {
+                    alternations: vec![
+                        vec![
+                            Pattern::Literal('j'),
+                            Pattern::Literal('k'),
+                            Pattern::Literal('l'),
                         ],
                         vec![
-                            Pattern::Literal('d'),
-                            Pattern::Literal('e'),
-                            Pattern::Literal('f'),
+                            Pattern::Literal('m'),
+                            Pattern::Literal('n'),
+                            Pattern::Literal('o'),
                         ],
-                    ]),],
-                    vec![
-                        Pattern::Literal('g'),
-                        Pattern::Literal('h'),
-                        Pattern::Literal('i'),
-                    ],
-                ]),
-                Pattern::Alternation(vec![
-                    vec![
-                        Pattern::Literal('j'),
-                        Pattern::Literal('k'),
-                        Pattern::Literal('l'),
-                    ],
-                    vec![
-                        Pattern::Literal('m'),
-                        Pattern::Literal('n'),
-                        Pattern::Literal('o'),
-                    ],
-                    vec![Pattern::Alternation(vec![vec![Pattern::OneOrMore(
-                        Box::new(Pattern::Chars)
-                    )]])]
-                ]),
-                Pattern::Alternation(vec![vec![
-                    Pattern::Literal('p'),
-                    Pattern::Literal('q'),
-                    Pattern::Literal('r'),
-                ],]),
+                        vec![Pattern::Alternation {
+                            alternations: vec![vec![Pattern::OneOrMore(Box::new(Pattern::Chars))]]
+                        }]
+                    ]
+                },
+                Pattern::Alternation {
+                    alternations: vec![vec![
+                        Pattern::Literal('p'),
+                        Pattern::Literal('q'),
+                        Pattern::Literal('r'),
+                    ]]
+                },
             ]
         }
     );
