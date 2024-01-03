@@ -276,23 +276,26 @@ fn match_here<'a>(
         (_, Some((Pattern::Alternation { alternations, id }, rem_patterns))) => {
             // For each possible alternation.
             for alt in alternations {
-                // Create a new standalone context.
-                if let Some((alt_match, alt_ref_table)) = match_here(
-                    alt,
-                    MatchContext::new(context.current_index, context.input_line),
-                ) {
-                    // If alternation has match, merge everything output from result into current context.
-                    let mut next_context = context
-                        .nth_char(alt_match.1 - alt_match.0)
-                        .with_back_reference(*id, alt_match);
+                // Check with line shorter than the whole input there is a negative char group in alternation.
+                for end_index in (context.current_index..=context.input_line.len()).rev() {
+                    // Create a new standalone context.
+                    if let Some((alt_match, alt_ref_table)) = match_here(
+                        alt,
+                        MatchContext::new(context.current_index, &context.input_line[..end_index]),
+                    ) {
+                        // If alternation has match, merge everything output from result into current context.
+                        let mut next_context = context
+                            .nth_char(alt_match.1 - alt_match.0)
+                            .with_back_reference(*id, alt_match);
 
-                    next_context.back_references.extend(alt_ref_table.iter());
+                        next_context.back_references.extend(alt_ref_table.iter());
 
-                    // Then try to match remaining patterns.
-                    if let Some(((_, end_index), ref_table)) =
-                        match_here(rem_patterns, next_context)
-                    {
-                        return Some(((context.start_index, end_index), ref_table));
+                        // Then try to match remaining patterns.
+                        if let Some(((_, end_index), ref_table)) =
+                            match_here(rem_patterns, next_context)
+                        {
+                            return Some(((context.start_index, end_index), ref_table));
+                        }
                     }
                 }
             }

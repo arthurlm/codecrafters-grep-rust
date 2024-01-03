@@ -118,6 +118,9 @@ fn test_alternation() {
     assert_not_match("none dogs", "(some|more) (cat|dog)s");
     assert_match(" cat and cat", r"(cat) and (cat)", 1, 12);
     assert_match(" cat and cat", r"(\w+) and (\w+)", 1, 12);
+    assert_match(" dog ", "([dog]+)", 1, 4);
+    assert_match(" xyz ", " ([xyz]+) ", 0, 5);
+    assert_match(" abc ", " ([^xyz]+) ", 0, 5);
 }
 
 #[test]
@@ -157,5 +160,11 @@ fn test_nested_back_reference() {
         r"((\w\w\w\w) (\d\d\d)) is doing \2 \3 times, and again \1 times",
         0,
         58,
+    );
+    assert_match(
+        "abc-def is abc-def, not efg, abc, or def",
+        r"(([abc]+)-([def]+)) is \1, not ([^xyz]+), \2, or \3",
+        0,
+        40,
     );
 }
