@@ -131,6 +131,12 @@ impl Pattern {
             Ok((input, Self::BackReference(0)))
         } else if let Some(input) = input.strip_prefix(r"\2") {
             Ok((input, Self::BackReference(1)))
+        } else if let Some(input) = input.strip_prefix(r"\3") {
+            Ok((input, Self::BackReference(2)))
+        } else if let Some(input) = input.strip_prefix(r"\4") {
+            Ok((input, Self::BackReference(3)))
+        } else if let Some(input) = input.strip_prefix(r"\5") {
+            Ok((input, Self::BackReference(4)))
         } else if let Some(input) = input.strip_prefix('.') {
             Ok((input, Self::Wildcard))
         } else if let Some(input) = input.strip_prefix('[') {
