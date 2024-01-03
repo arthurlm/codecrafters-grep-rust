@@ -140,24 +140,41 @@ impl Pattern {
                 }
             }
         } else if let Some(input) = input.strip_prefix('(') {
-            match input.chars().position(|c| c == ')') {
-                None => Err(GrepError::InvalidPattern),
-                Some(end) => {
-                    let sub_input = &input[..end];
-                    assert!(
-                        !sub_input.contains('('),
-                        "unsupported nested alternation parse"
-                    );
+            let mut delimiter_count = 1_isize;
+            let mut parse_start = 0;
+            let mut parse_end = 0;
+            let mut sub_inputs = Vec::new();
 
-                    let mut alternations = Vec::new();
-                    for sub_sequence in sub_input.split('|') {
-                        let sub_re = Regexp::parse(sub_sequence)?;
-                        alternations.push(sub_re.patterns);
+            // Find end delimiter
+            for (idx, c) in input.chars().enumerate() {
+                match c {
+                    '(' => delimiter_count += 1,
+                    ')' => delimiter_count -= 1,
+                    '|' if delimiter_count == 1 => {
+                        sub_inputs.push(&input[parse_start..idx]);
+                        parse_start = idx + 1;
                     }
+                    _ => {}
+                }
 
-                    Ok((&input[end + 1..], Self::Alternation(alternations)))
+                if delimiter_count == 0 {
+                    sub_inputs.push(&input[parse_start..idx]);
+                    parse_end = idx;
+                    break;
                 }
             }
+
+            if delimiter_count != 0 {
+                return Err(GrepError::InvalidPattern);
+            }
+
+            let mut alternations = Vec::new();
+            for sub_sequence in sub_inputs {
+                let sub_re = Regexp::parse(sub_sequence)?;
+                alternations.push(sub_re.patterns);
+            }
+
+            Ok((&input[parse_end + 1..], Self::Alternation(alternations)))
         } else if input.is_empty() {
             Err(GrepError::InvalidPattern)
         } else {

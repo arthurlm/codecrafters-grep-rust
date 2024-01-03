@@ -210,6 +210,93 @@ fn test_parse_pattern() {
             patterns: vec![Pattern::BackReference(0)],
         }
     );
+
+    assert_eq!(
+        Regexp::parse(r"('(cat) and \2') is the same as \1").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Alternation(vec![vec![
+                    Pattern::Literal('\''),
+                    Pattern::Alternation(vec![vec![
+                        Pattern::Literal('c'),
+                        Pattern::Literal('a'),
+                        Pattern::Literal('t'),
+                    ]]),
+                    Pattern::Literal(' '),
+                    Pattern::Literal('a'),
+                    Pattern::Literal('n'),
+                    Pattern::Literal('d'),
+                    Pattern::Literal(' '),
+                    Pattern::BackReference(1),
+                    Pattern::Literal('\''),
+                ]]),
+                Pattern::Literal(' '),
+                Pattern::Literal('i'),
+                Pattern::Literal('s'),
+                Pattern::Literal(' '),
+                Pattern::Literal('t'),
+                Pattern::Literal('h'),
+                Pattern::Literal('e'),
+                Pattern::Literal(' '),
+                Pattern::Literal('s'),
+                Pattern::Literal('a'),
+                Pattern::Literal('m'),
+                Pattern::Literal('e'),
+                Pattern::Literal(' '),
+                Pattern::Literal('a'),
+                Pattern::Literal('s'),
+                Pattern::Literal(' '),
+                Pattern::BackReference(0),
+            ]
+        }
+    );
+
+    assert_eq!(
+        Regexp::parse(r"((abc|def)|ghi)(jkl|mno|(\w+))(pqr)").unwrap(),
+        Regexp {
+            patterns: vec![
+                Pattern::Alternation(vec![
+                    vec![Pattern::Alternation(vec![
+                        vec![
+                            Pattern::Literal('a'),
+                            Pattern::Literal('b'),
+                            Pattern::Literal('c'),
+                        ],
+                        vec![
+                            Pattern::Literal('d'),
+                            Pattern::Literal('e'),
+                            Pattern::Literal('f'),
+                        ],
+                    ]),],
+                    vec![
+                        Pattern::Literal('g'),
+                        Pattern::Literal('h'),
+                        Pattern::Literal('i'),
+                    ],
+                ]),
+                Pattern::Alternation(vec![
+                    vec![
+                        Pattern::Literal('j'),
+                        Pattern::Literal('k'),
+                        Pattern::Literal('l'),
+                    ],
+                    vec![
+                        Pattern::Literal('m'),
+                        Pattern::Literal('n'),
+                        Pattern::Literal('o'),
+                    ],
+                    vec![Pattern::Alternation(vec![vec![Pattern::OneOrMore(
+                        Box::new(Pattern::Chars)
+                    )]])]
+                ]),
+                Pattern::Alternation(vec![vec![
+                    Pattern::Literal('p'),
+                    Pattern::Literal('q'),
+                    Pattern::Literal('r'),
+                ],]),
+            ]
+        }
+    );
 }
 
 #[test]
@@ -230,13 +317,6 @@ fn test_parse_invalid_pattern() {
     assert_eq!(e, GrepError::InvalidPattern);
 
     let e = Regexp::parse("(abc").unwrap_err();
-    assert_eq!(e, GrepError::InvalidPattern);
-}
-
-#[test]
-#[should_panic]
-fn test_valid_unsupported_pattern1() {
-    let e = Regexp::parse("((abc|def)|ghi)").unwrap_err();
     assert_eq!(e, GrepError::InvalidPattern);
 }
 
