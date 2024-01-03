@@ -5,8 +5,12 @@ pub use error::*;
 pub type MatchResult = (usize, usize);
 
 pub fn match_pattern(input_line: &str, input_pattern: &str) -> Option<MatchResult> {
-    let re = Regexp::parse(input_pattern).expect("Unhandled pattern");
+    let re = re_parse(input_pattern).expect("Unhandled pattern");
     re.matches(input_line)
+}
+
+pub fn re_parse(input_pattern: &str) -> Result<Regexp, GrepError> {
+    Regexp::parse(input_pattern)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -31,7 +35,7 @@ pub enum Pattern {
 }
 
 impl Regexp {
-    pub fn parse(mut input: &str) -> Result<Self, GrepError> {
+    fn parse(mut input: &str) -> Result<Self, GrepError> {
         let mut patterns = Vec::new();
 
         // Parse anchor
@@ -88,7 +92,7 @@ impl Regexp {
         Ok(Self { patterns })
     }
 
-    pub fn matches(&self, input_line: &str) -> Option<MatchResult> {
+    fn matches(&self, input_line: &str) -> Option<MatchResult> {
         if self.patterns.first() == Some(&Pattern::Start) {
             match_here(&self.patterns[1..], MatchContext::new(0, input_line))
         } else {
@@ -106,7 +110,7 @@ impl Regexp {
 }
 
 impl Pattern {
-    pub fn parse(input: &str) -> Result<(&str, Self), GrepError> {
+    fn parse(input: &str) -> Result<(&str, Self), GrepError> {
         if let Some(input) = input.strip_prefix(r"\d") {
             Ok((input, Self::Digit))
         } else if let Some(input) = input.strip_prefix(r"\w") {
@@ -275,7 +279,7 @@ fn concat_pattern(item: &Pattern, items: &[Pattern]) -> Vec<Pattern> {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct MatchContext<'a> {
+struct MatchContext<'a> {
     start_index: usize,
     current_index: usize,
     input_line: &'a str,
@@ -284,7 +288,7 @@ pub struct MatchContext<'a> {
 
 impl<'a> MatchContext<'a> {
     #[inline(always)]
-    pub fn new(start_index: usize, input_line: &'a str) -> Self {
+    fn new(start_index: usize, input_line: &'a str) -> Self {
         Self {
             start_index,
             current_index: start_index,
@@ -294,12 +298,12 @@ impl<'a> MatchContext<'a> {
     }
 
     #[inline(always)]
-    pub fn next_char(&self) -> Self {
+    fn next_char(&self) -> Self {
         self.nth_char(1)
     }
 
     #[inline(always)]
-    pub fn nth_char(&self, count: usize) -> Self {
+    fn nth_char(&self, count: usize) -> Self {
         Self {
             start_index: self.start_index,
             current_index: self.current_index + count,
@@ -309,13 +313,13 @@ impl<'a> MatchContext<'a> {
     }
 
     #[inline(always)]
-    pub fn with_back_reference(mut self, pos: MatchResult) -> Self {
+    fn with_back_reference(mut self, pos: MatchResult) -> Self {
         self.back_references.push(&self.input_line[pos.0..pos.1]);
         self
     }
 
     #[inline(always)]
-    pub fn first_char(&self) -> Option<char> {
+    fn first_char(&self) -> Option<char> {
         self.input_line.chars().nth(self.current_index)
     }
 }
