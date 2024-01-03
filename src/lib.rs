@@ -7,7 +7,7 @@ use std::{
 
 pub use error::*;
 
-pub type MatchResult = (usize, usize);
+type MatchResult = (usize, usize);
 type ReferenceTable<'a> = HashMap<usize, &'a str>;
 
 pub fn match_pattern(input_line: &str, input_pattern: &str) -> Option<MatchResult> {
