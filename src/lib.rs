@@ -8,6 +8,7 @@ use std::{
 pub use error::*;
 
 pub type MatchResult = (usize, usize);
+type ReferenceTable<'a> = HashMap<usize, &'a str>;
 
 pub fn match_pattern(input_line: &str, input_pattern: &str) -> Option<MatchResult> {
     let re = re_parse(input_pattern).expect("Unhandled pattern");
@@ -102,10 +103,16 @@ impl Regexp {
 
     fn matches(&self, input_line: &str) -> Option<MatchResult> {
         if self.patterns.first() == Some(&Pattern::Start) {
-            match_here(&self.patterns[1..], MatchContext::new(0, input_line))
+            if let Some((res, _table)) =
+                match_here(&self.patterns[1..], MatchContext::new(0, input_line))
+            {
+                return Some(res);
+            }
+
+            None
         } else {
             for start_idx in 0..input_line.len() {
-                if let Some(res) =
+                if let Some((res, _table)) =
                     match_here(&self.patterns, MatchContext::new(start_idx, input_line))
                 {
                     return Some(res);
@@ -215,7 +222,10 @@ impl Pattern {
     }
 }
 
-fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult> {
+fn match_here<'a>(
+    patterns: &[Pattern],
+    context: MatchContext<'a>,
+) -> Option<(MatchResult, ReferenceTable<'a>)> {
     match (context.first_char(), patterns.split_first()) {
         // Check if pattern and current char match
         (Some(input_char), Some((Pattern::Literal(char), rem_patterns))) if input_char == *char => {
@@ -264,18 +274,25 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
                 match_here(rem_patterns, context))
         }
         (_, Some((Pattern::Alternation { alternations, id }, rem_patterns))) => {
+            // For each possible alternation.
             for alt in alternations {
-                if let Some(alt_match) = match_here(
+                // Create a new standalone context.
+                if let Some((alt_match, alt_ref_table)) = match_here(
                     alt,
                     MatchContext::new(context.current_index, context.input_line),
                 ) {
-                    if let Some((_, end_index)) = match_here(
-                        rem_patterns,
-                        context
-                            .nth_char(alt_match.1 - alt_match.0)
-                            .with_back_reference(*id, alt_match),
-                    ) {
-                        return Some((context.start_index, end_index));
+                    // If alternation as match, merge everything output from result into current context.
+                    let mut next_context = context
+                        .nth_char(alt_match.1 - alt_match.0)
+                        .with_back_reference(*id, alt_match);
+
+                    next_context.back_references.extend(alt_ref_table.iter());
+
+                    // Then try to match remaining patterns.
+                    if let Some(((_, end_index), ref_table)) =
+                        match_here(rem_patterns, next_context)
+                    {
+                        return Some(((context.start_index, end_index), ref_table));
                     }
                 }
             }
@@ -283,11 +300,15 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
             None
         }
         // Check end pattern
-        (None, Some((Pattern::End, _rem_patterns))) => {
-            Some((context.start_index, context.current_index))
-        }
+        (None, Some((Pattern::End, _rem_patterns))) => Some((
+            (context.start_index, context.current_index),
+            context.back_references,
+        )),
         // If there is no more pattern
-        (_, None) => Some((context.start_index, context.current_index)),
+        (_, None) => Some((
+            (context.start_index, context.current_index),
+            context.back_references,
+        )),
         // // It there is some pattern left and it did not match whatever char we have
         (_, Some(_)) => None,
     }
@@ -305,7 +326,7 @@ struct MatchContext<'a> {
     start_index: usize,
     current_index: usize,
     input_line: &'a str,
-    back_references: HashMap<usize, &'a str>,
+    back_references: ReferenceTable<'a>,
 }
 
 impl<'a> MatchContext<'a> {

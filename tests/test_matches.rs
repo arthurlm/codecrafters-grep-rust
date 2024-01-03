@@ -152,4 +152,10 @@ fn test_nested_back_reference() {
         1,
         43,
     );
+    assert_match(
+        "grep 101 is doing grep 101 times, and again grep 101 times",
+        r"((\w\w\w\w) (\d\d\d)) is doing \2 \3 times, and again \1 times",
+        0,
+        58,
+    );
 }
