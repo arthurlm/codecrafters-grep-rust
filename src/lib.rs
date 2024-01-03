@@ -281,7 +281,7 @@ fn match_here<'a>(
                     alt,
                     MatchContext::new(context.current_index, context.input_line),
                 ) {
-                    // If alternation as match, merge everything output from result into current context.
+                    // If alternation has match, merge everything output from result into current context.
                     let mut next_context = context
                         .nth_char(alt_match.1 - alt_match.0)
                         .with_back_reference(*id, alt_match);
