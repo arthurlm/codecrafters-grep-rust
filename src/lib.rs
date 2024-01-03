@@ -1,5 +1,10 @@
 mod error;
 
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
 pub use error::*;
 
 pub type MatchResult = (usize, usize);
@@ -10,7 +15,7 @@ pub fn match_pattern(input_line: &str, input_pattern: &str) -> Option<MatchResul
 }
 
 pub fn re_parse(input_pattern: &str) -> Result<Regexp, GrepError> {
-    Regexp::parse(input_pattern)
+    Regexp::parse(input_pattern, &AtomicUsize::new(0))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -30,12 +35,15 @@ pub enum Pattern {
     OneOrMore(Box<Pattern>),
     ZeroOrOne(Box<Pattern>),
     Wildcard,
-    Alternation { alternations: Vec<Vec<Pattern>> },
+    Alternation {
+        alternations: Vec<Vec<Pattern>>,
+        id: usize,
+    },
     BackReference(usize),
 }
 
 impl Regexp {
-    fn parse(mut input: &str) -> Result<Self, GrepError> {
+    fn parse(mut input: &str, alternation_counter: &AtomicUsize) -> Result<Self, GrepError> {
         let mut patterns = Vec::new();
 
         // Parse anchor
@@ -71,7 +79,7 @@ impl Regexp {
                 break;
             }
 
-            let (next_input, pattern) = Pattern::parse(input)?;
+            let (next_input, pattern) = Pattern::parse(input, alternation_counter)?;
             patterns.push(pattern);
             input = next_input;
         }
@@ -110,7 +118,10 @@ impl Regexp {
 }
 
 impl Pattern {
-    fn parse(input: &str) -> Result<(&str, Self), GrepError> {
+    fn parse<'a>(
+        input: &'a str,
+        alternation_counter: &AtomicUsize,
+    ) -> Result<(&'a str, Self), GrepError> {
         if let Some(input) = input.strip_prefix(r"\d") {
             Ok((input, Self::Digit))
         } else if let Some(input) = input.strip_prefix(r"\w") {
@@ -173,12 +184,17 @@ impl Pattern {
             }
 
             let mut alternations = Vec::new();
+            let id = alternation_counter.fetch_add(1, Ordering::Relaxed);
+
             for sub_sequence in sub_inputs {
-                let sub_re = Regexp::parse(sub_sequence)?;
+                let sub_re = Regexp::parse(sub_sequence, alternation_counter)?;
                 alternations.push(sub_re.patterns);
             }
 
-            Ok((&input[parse_end + 1..], Self::Alternation { alternations }))
+            Ok((
+                &input[parse_end + 1..],
+                Self::Alternation { alternations, id },
+            ))
         } else if input.is_empty() {
             Err(GrepError::InvalidPattern)
         } else {
@@ -222,7 +238,7 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
         }
         // Match back reference
         (_, Some((Pattern::BackReference(index), rem_patterns))) => {
-            let reference = context.back_references.get(*index)?;
+            let reference = context.back_references.get(index)?;
             if !context.input_line[context.current_index..].starts_with(reference) {
                 return None;
             }
@@ -241,7 +257,7 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
                 // Match zero
                 match_here(rem_patterns, context))
         }
-        (_, Some((Pattern::Alternation { alternations }, rem_patterns))) => {
+        (_, Some((Pattern::Alternation { alternations, id }, rem_patterns))) => {
             for alt in alternations {
                 if let Some(alt_match) = match_here(
                     alt,
@@ -251,7 +267,7 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
                         rem_patterns,
                         context
                             .nth_char(alt_match.1 - alt_match.0)
-                            .with_back_reference(alt_match),
+                            .with_back_reference(*id, alt_match),
                     ) {
                         return Some((context.start_index, end_index));
                     }
@@ -283,7 +299,7 @@ struct MatchContext<'a> {
     start_index: usize,
     current_index: usize,
     input_line: &'a str,
-    back_references: Vec<&'a str>,
+    back_references: HashMap<usize, &'a str>,
 }
 
 impl<'a> MatchContext<'a> {
@@ -293,7 +309,7 @@ impl<'a> MatchContext<'a> {
             start_index,
             current_index: start_index,
             input_line,
-            back_references: Vec::new(),
+            back_references: HashMap::new(),
         }
     }
 
@@ -313,8 +329,10 @@ impl<'a> MatchContext<'a> {
     }
 
     #[inline(always)]
-    fn with_back_reference(mut self, pos: MatchResult) -> Self {
-        self.back_references.push(&self.input_line[pos.0..pos.1]);
+    fn with_back_reference(mut self, id: usize, pos: MatchResult) -> Self {
+        self.back_references
+            .insert(id, &self.input_line[pos.0..pos.1]);
+
         self
     }
 

@@ -143,3 +143,13 @@ fn test_multi_back_reference() {
         r"(\d+) (\w+) squares and \1 \2 circles",
     );
 }
+
+#[test]
+fn test_nested_back_reference() {
+    assert_match(
+        " 'cat and cat' is the same as 'cat and cat' ",
+        r"('(cat) and \2') is the same as \1",
+        1,
+        43,
+    );
+}

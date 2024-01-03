@@ -169,7 +169,8 @@ fn test_parse_pattern() {
                         Pattern::Literal('o'),
                         Pattern::Literal('g')
                     ]
-                ]
+                ],
+                id: 0,
             }],
         }
     );
@@ -200,7 +201,8 @@ fn test_parse_pattern() {
                             Pattern::Literal('c'),
                             Pattern::Chars,
                         ],
-                    ]
+                    ],
+                    id: 0,
                 },
                 Pattern::ZeroOrOne(Box::new(Pattern::Literal('s'))),
                 Pattern::End,
@@ -227,7 +229,8 @@ fn test_parse_pattern() {
                                 Pattern::Literal('c'),
                                 Pattern::Literal('a'),
                                 Pattern::Literal('t'),
-                            ]]
+                            ]],
+                            id: 1,
                         },
                         Pattern::Literal(' '),
                         Pattern::Literal('a'),
@@ -236,7 +239,8 @@ fn test_parse_pattern() {
                         Pattern::Literal(' '),
                         Pattern::BackReference(1),
                         Pattern::Literal('\''),
-                    ]]
+                    ]],
+                    id: 0,
                 },
                 Pattern::Literal(' '),
                 Pattern::Literal('i'),
@@ -277,14 +281,16 @@ fn test_parse_pattern() {
                                     Pattern::Literal('e'),
                                     Pattern::Literal('f'),
                                 ],
-                            ]
+                            ],
+                            id: 1
                         }],
                         vec![
                             Pattern::Literal('g'),
                             Pattern::Literal('h'),
                             Pattern::Literal('i'),
                         ],
-                    ]
+                    ],
+                    id: 0
                 },
                 Pattern::Alternation {
                     alternations: vec![
@@ -299,16 +305,19 @@ fn test_parse_pattern() {
                             Pattern::Literal('o'),
                         ],
                         vec![Pattern::Alternation {
-                            alternations: vec![vec![Pattern::OneOrMore(Box::new(Pattern::Chars))]]
+                            alternations: vec![vec![Pattern::OneOrMore(Box::new(Pattern::Chars))]],
+                            id: 3
                         }]
-                    ]
+                    ],
+                    id: 2
                 },
                 Pattern::Alternation {
                     alternations: vec![vec![
                         Pattern::Literal('p'),
                         Pattern::Literal('q'),
                         Pattern::Literal('r'),
-                    ]]
+                    ]],
+                    id: 4
                 },
             ]
         }
