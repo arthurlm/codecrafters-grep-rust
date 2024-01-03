@@ -201,13 +201,10 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
             match_here(rem_patterns, context.next_char())
         }
         (_, Some((Pattern::OneOrMore(pattern), rem_patterns))) => {
-            // Match at least once the inner pattern
-            match_here(&[pattern.as_ref().clone()], context.clone())?;
-
-            // Then continue recursion
-            match_here(rem_patterns, context.next_char()).or(
-                // Or retry again current pattern sequence on next input
-                match_here(patterns, context.next_char()),
+            // Match inner pattern with remaining patterns = match one
+            match_here(&concat_pattern(pattern, rem_patterns), context.clone()).or(
+                // Or match inner pattern with input patterns = match more
+                match_here(&concat_pattern(pattern, patterns), context.clone()),
             )
         }
         (_, Some((Pattern::ZeroOrOne(pattern), rem_patterns))) => {
