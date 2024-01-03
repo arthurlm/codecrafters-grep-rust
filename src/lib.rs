@@ -202,17 +202,15 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
         }
         (_, Some((Pattern::OneOrMore(pattern), rem_patterns))) => {
             // Match inner pattern with remaining patterns = match one
-            match_here(&concat_pattern(pattern, rem_patterns), context.clone()).or(
+            match_here(&concat_pattern(pattern, rem_patterns), context.clone()).or_else(||
                 // Or match inner pattern with input patterns = match more
-                match_here(&concat_pattern(pattern, patterns), context.clone()),
-            )
+                match_here(&concat_pattern(pattern, patterns), context))
         }
         (_, Some((Pattern::ZeroOrOne(pattern), rem_patterns))) => {
             // Match one
-            match_here(&concat_pattern(pattern, rem_patterns), context.clone()).or(
+            match_here(&concat_pattern(pattern, rem_patterns), context.clone()).or_else(||
                 // Match zero
-                match_here(rem_patterns, context),
-            )
+                match_here(rem_patterns, context))
         }
         (_, Some((Pattern::Alternation(alternations), rem_patterns))) => {
             for alt in alternations {
