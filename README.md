@@ -1,5 +1,3 @@
-[![progress-banner](https://backend.codecrafters.io/progress/grep/bfac216e-b1b7-4043-b517-dbd399ab292c)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
-
 # Codecrafters grep
 
 Solution to the [Codecrafters grep](https://app.codecrafters.io/courses/grep/completed) challenge.
