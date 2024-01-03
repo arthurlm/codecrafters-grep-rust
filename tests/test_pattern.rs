@@ -203,6 +203,13 @@ fn test_parse_pattern() {
             ],
         }
     );
+
+    assert_eq!(
+        Regexp::parse(r"\1").unwrap(),
+        Regexp {
+            patterns: vec![Pattern::BackReference(0)],
+        }
+    );
 }
 
 #[test]

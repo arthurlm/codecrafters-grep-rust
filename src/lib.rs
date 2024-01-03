@@ -27,6 +27,7 @@ pub enum Pattern {
     ZeroOrOne(Box<Pattern>),
     Wildcard,
     Alternation(Vec<Vec<Pattern>>),
+    BackReference(usize),
 }
 
 impl Regexp {
@@ -108,10 +109,13 @@ impl Pattern {
     pub fn parse(input: &str) -> Result<(&str, Self), GrepError> {
         if let Some(input) = input.strip_prefix(r"\d") {
             Ok((input, Self::Digit))
-        } else if let Some(input) = input.strip_prefix('.') {
-            Ok((input, Self::Wildcard))
         } else if let Some(input) = input.strip_prefix(r"\w") {
             Ok((input, Self::Chars))
+        } else if let Some(input) = input.strip_prefix(r"\1") {
+            // NOTE: maybe improve this back reference parsing ...
+            Ok((input, Self::BackReference(0)))
+        } else if let Some(input) = input.strip_prefix('.') {
+            Ok((input, Self::Wildcard))
         } else if let Some(input) = input.strip_prefix('[') {
             match input.chars().position(|c| c == ']') {
                 None => Err(GrepError::InvalidPattern),
@@ -193,6 +197,15 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
         (Some(_), Some((Pattern::Wildcard, rem_patterns))) => {
             match_here(rem_patterns, context.next_char())
         }
+        // Match back reference
+        (_, Some((Pattern::BackReference(index), rem_patterns))) => {
+            let reference = context.back_references.get(*index)?;
+            if !context.input_line[context.current_index..].starts_with(reference) {
+                return None;
+            }
+            match_here(rem_patterns, context.nth_char(reference.len()))
+        }
+        // Match multiple chars
         (_, Some((Pattern::OneOrMore(pattern), rem_patterns))) => {
             // Match inner pattern with input patterns = match more
             match_here(&concat_pattern(pattern, patterns), context.clone()).or_else(||
@@ -207,9 +220,18 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
         }
         (_, Some((Pattern::Alternation(alternations), rem_patterns))) => {
             for alt in alternations {
-                if let Some(res) = match_here(&concat_patterns(alt, rem_patterns), context.clone())
-                {
-                    return Some(res);
+                if let Some(alt_match) = match_here(
+                    alt,
+                    MatchContext::new(context.current_index, context.input_line),
+                ) {
+                    if let Some((_, end_index)) = match_here(
+                        rem_patterns,
+                        context
+                            .nth_char(alt_match.1 - alt_match.0)
+                            .with_back_reference(alt_match),
+                    ) {
+                        return Some((context.start_index, end_index));
+                    }
                 }
             }
 
@@ -233,37 +255,47 @@ fn concat_pattern(item: &Pattern, items: &[Pattern]) -> Vec<Pattern> {
     output
 }
 
-fn concat_patterns(a: &[Pattern], b: &[Pattern]) -> Vec<Pattern> {
-    let mut output = Vec::with_capacity(a.len() + b.len());
-    output.extend(a.iter().cloned());
-    output.extend(b.iter().cloned());
-    output
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct MatchContext<'a> {
     start_index: usize,
     current_index: usize,
     input_line: &'a str,
+    back_references: Vec<&'a str>,
 }
 
 impl<'a> MatchContext<'a> {
+    #[inline(always)]
     pub fn new(start_index: usize, input_line: &'a str) -> Self {
         Self {
             start_index,
             current_index: start_index,
             input_line,
+            back_references: Vec::new(),
         }
     }
 
+    #[inline(always)]
     pub fn next_char(&self) -> Self {
+        self.nth_char(1)
+    }
+
+    #[inline(always)]
+    pub fn nth_char(&self, count: usize) -> Self {
         Self {
             start_index: self.start_index,
-            current_index: self.current_index + 1,
+            current_index: self.current_index + count,
             input_line: self.input_line,
+            back_references: self.back_references.clone(),
         }
     }
 
+    #[inline(always)]
+    pub fn with_back_reference(mut self, pos: MatchResult) -> Self {
+        self.back_references.push(&self.input_line[pos.0..pos.1]);
+        self
+    }
+
+    #[inline(always)]
     pub fn first_char(&self) -> Option<char> {
         self.input_line.chars().nth(self.current_index)
     }

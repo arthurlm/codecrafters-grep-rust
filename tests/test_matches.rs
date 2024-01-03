@@ -126,3 +126,22 @@ fn test_alternation() {
         Some((1, 12))
     );
 }
+
+#[test]
+fn test_back_reference() {
+    assert_eq!(match_pattern("", r"(cat) and \1"), None);
+    assert_eq!(
+        match_pattern(" cat and cat ", r"(cat) and \1"),
+        Some((1, 12))
+    );
+    assert_eq!(match_pattern(" cat and dog ", r"(cat) and \1"), None);
+    assert_eq!(
+        match_pattern(" cat and cat ", r"(\w+) and \1"),
+        Some((1, 12))
+    );
+    assert_eq!(
+        match_pattern(" dog and dog ", r"(\w+) and \1"),
+        Some((1, 12))
+    );
+    assert_eq!(match_pattern(" cat and dog ", r"(\w+) and \1"), None);
+}
