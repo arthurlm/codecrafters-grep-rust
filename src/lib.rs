@@ -202,7 +202,7 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
         }
         (_, Some((Pattern::OneOrMore(pattern), rem_patterns))) => {
             // Match at least once the inner pattern
-            match_here(&[pattern.as_ref().clone()], context)?;
+            match_here(&[pattern.as_ref().clone()], context.clone())?;
 
             // Then continue recursion
             match_here(rem_patterns, context.next_char()).or(
@@ -212,14 +212,15 @@ fn match_here(patterns: &[Pattern], context: MatchContext) -> Option<MatchResult
         }
         (_, Some((Pattern::ZeroOrOne(pattern), rem_patterns))) => {
             // Match one
-            match_here(&concat_pattern(pattern, rem_patterns), context).or(
+            match_here(&concat_pattern(pattern, rem_patterns), context.clone()).or(
                 // Match zero
                 match_here(rem_patterns, context),
             )
         }
         (_, Some((Pattern::Alternation(alternations), rem_patterns))) => {
             for alt in alternations {
-                if let Some(res) = match_here(&concat_patterns(alt, rem_patterns), context) {
+                if let Some(res) = match_here(&concat_patterns(alt, rem_patterns), context.clone())
+                {
                     return Some(res);
                 }
             }
@@ -251,7 +252,7 @@ fn concat_patterns(a: &[Pattern], b: &[Pattern]) -> Vec<Pattern> {
     output
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct MatchContext<'a> {
     start_index: usize,
     current_index: usize,
