@@ -114,6 +114,8 @@ impl Pattern {
         } else if let Some(input) = input.strip_prefix(r"\1") {
             // NOTE: maybe improve this back reference parsing ...
             Ok((input, Self::BackReference(0)))
+        } else if let Some(input) = input.strip_prefix(r"\2") {
+            Ok((input, Self::BackReference(1)))
         } else if let Some(input) = input.strip_prefix('.') {
             Ok((input, Self::Wildcard))
         } else if let Some(input) = input.strip_prefix('[') {

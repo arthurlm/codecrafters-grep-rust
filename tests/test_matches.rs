@@ -129,3 +129,17 @@ fn test_back_reference() {
     assert_match(" dog and dog ", r"(\w+) and \1", 1, 12);
     assert_not_match(" cat and dog ", r"(\w+) and \1");
 }
+
+#[test]
+fn test_multi_back_reference() {
+    assert_match(
+        " 3 red squares and 3 red circles ",
+        r"(\d+) (\w+) squares and \1 \2 circles",
+        1,
+        32,
+    );
+    assert_not_match(
+        "3 red squares and 4 red circles",
+        r"(\d+) (\w+) squares and \1 \2 circles",
+    );
+}
